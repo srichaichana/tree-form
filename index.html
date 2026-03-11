@@ -128,6 +128,7 @@
     .today-count { font-size: 0.68rem; color: #4ade8066; margin-bottom: 0.8rem; letter-spacing: 0.05em; }
     .btn-download-csv { background: transparent; border: 1px dashed #4ade8044; color: var(--green); border-radius: 6px; padding: 0.4rem 1rem; cursor: pointer; font-size: 0.72rem; font-family: 'Courier New', monospace; letter-spacing: 0.05em; transition: all 0.2s; width: 100%; margin-top: 0.4rem; }
     .btn-download-csv:hover { border-color: var(--green); background: #14532d22; }
+    .warn-dup { font-size: 0.65rem; color: #fbbf24; background: #78350f33; border: 1px solid #f59e0b44; border-radius: 5px; padding: 0.3rem 0.6rem; margin-top: 0.25rem; display: none; letter-spacing: 0.03em; }
   </style>
 </head>
 <body>
@@ -147,7 +148,8 @@
 
     <div class="field">
       <label class="field-label">Track ID</label>
-      <input type="text" id="trackId" placeholder="e.g. T-001, Plot-A3" />
+      <input type="text" id="trackId" placeholder="e.g. T-001, Plot-A3" oninput="checkDupId()" />
+      <div class="warn-dup" id="dupWarn">⚠ Track ID นี้ถูกบันทึกไปแล้ว / Already recorded</div>
     </div>
 
     <div class="field">
@@ -570,14 +572,38 @@ function showError(msg) {
   var el=document.getElementById('errorBox'); el.textContent=msg; el.style.display='block';
   setTimeout(function(){el.style.display='none';},6000);
 }
+function autoIncrementTrackId() {
+  var val = document.getElementById('trackId').value.trim();
+  if (!val) return;
+  // Match trailing number, e.g. "T-001" → prefix="T-", num=1, pad=3
+  var m = val.match(/^(.*?)(\d+)$/);
+  if (m) {
+    var prefix = m[1];
+    var num = parseInt(m[2], 10) + 1;
+    var padded = String(num).padStart(m[2].length, '0');
+    document.getElementById('trackId').value = prefix + padded;
+  }
+  // else: no trailing number → leave as-is, user types manually
+  checkDupId();
+}
+
+function checkDupId() {
+  var val = document.getElementById('trackId').value.trim();
+  var isDup = val && records.some(function(r){ return r.trackId === val; });
+  var warn = document.getElementById('dupWarn');
+  warn.style.display = isDup ? 'block' : 'none';
+  document.getElementById('trackId').style.borderColor = isDup ? '#f59e0b88' : '';
+}
+
 function resetForm() {
-  ['trackId','x','y','nameThai','botanical','genus','speciesepi',
+  ['x','y','nameThai','botanical','genus','speciesepi',
    'gbh','height','crowncoverN','crowncovS','crowncovE','crowncovW'].forEach(function(id){
     document.getElementById(id).value='';
   });
   document.getElementById('latlngDisplay').textContent='';
   document.getElementById('branches').innerHTML=''; addBranch(true);
   document.getElementById('crownTotal').textContent='0.00 m';
+  autoIncrementTrackId();
 }
 
 var records = [];
