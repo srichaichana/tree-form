@@ -3,148 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🌳 Tree Data Collection</title>
+  <title>Tree Data Collection</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      min-height: 100vh;
-      background: linear-gradient(160deg, #050f07 0%, #0b2212 50%, #071a0d 100%);
-      font-family: Georgia, serif;
-      padding: 2rem 1rem;
-      color: #d1fae5;
-    }
-
-    .bg-dots {
-      position: fixed; inset: 0; opacity: 0.025; pointer-events: none;
-      background-image: radial-gradient(circle at 2px 2px, #4ade80 1px, transparent 0);
-      background-size: 36px 36px;
-    }
-
+    body { min-height: 100vh; background: linear-gradient(160deg, #050f07 0%, #0b2212 50%, #071a0d 100%); font-family: Georgia, serif; padding: 2rem 1rem; color: #d1fae5; }
+    .bg-dots { position: fixed; inset: 0; opacity: 0.025; pointer-events: none; background-image: radial-gradient(circle at 2px 2px, #4ade80 1px, transparent 0); background-size: 36px 36px; }
     .header { text-align: center; margin-bottom: 2rem; }
     .header h1 { color: #86efac; font-size: 1.8rem; font-weight: 700; text-shadow: 0 0 30px #4ade8044; margin: 0.2rem 0 0; }
     .header p { color: #4ade8066; font-size: 0.8rem; font-style: italic; margin: 0.3rem 0 0; }
-
-    .badge {
-      display: inline-block; margin-top: 0.8rem;
-      border-radius: 20px; padding: 0.35rem 1rem; font-size: 0.82rem;
-    }
+    .badge { display: inline-block; margin-top: 0.8rem; border-radius: 20px; padding: 0.35rem 1rem; font-size: 0.82rem; }
     .badge-success { background: #14532d; border: 1px solid #4ade80; color: #86efac; }
-    .badge-error   { background: #450a0a; border: 1px solid #dc2626; color: #fca5a5; }
-    .badge-count   { background: #14532d44; border: 1px solid #4ade8033; color: #86efac; }
-
-    .card {
-      max-width: 680px; margin: 0 auto;
-      background: rgba(7,20,10,0.85);
-      border: 1px solid #4ade8022;
-      border-radius: 16px; padding: 2rem;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 24px 64px rgba(0,0,0,0.6), inset 0 1px 0 #4ade801a;
-    }
-
+    .badge-error { background: #450a0a; border: 1px solid #dc2626; color: #fca5a5; }
+    .badge-count { background: #14532d44; border: 1px solid #4ade8033; color: #86efac; }
+    .card { max-width: 680px; margin: 0 auto; background: rgba(7,20,10,0.85); border: 1px solid #4ade8022; border-radius: 16px; padding: 2rem; backdrop-filter: blur(12px); box-shadow: 0 24px 64px rgba(0,0,0,0.6); }
     .section { margin-bottom: 1.8rem; }
-    .section-title {
-      color: #86efac; font-size: 0.8rem; font-weight: 700;
-      letter-spacing: 0.06em; border-bottom: 1px solid #4ade8022;
-      padding-bottom: 0.5rem; margin-bottom: 1rem;
-    }
-
-    label {
-      color: #86efac99; font-size: 0.72rem; font-weight: 600;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      display: block; margin-bottom: 0.3rem;
-    }
-
-    input[type=text], input[type=number] {
-      width: 100%; background: #071a0d;
-      border: 1px solid #4ade8022; border-radius: 8px;
-      padding: 0.55rem 0.75rem; color: #d1fae5;
-      font-size: 0.88rem; outline: none;
-      transition: border-color 0.2s; font-family: Georgia, serif;
-    }
+    .section-title { color: #86efac; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; border-bottom: 1px solid #4ade8022; padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    label { color: #86efac99; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
+    input[type=text], input[type=number] { width: 100%; background: #071a0d; border: 1px solid #4ade8022; border-radius: 8px; padding: 0.55rem 0.75rem; color: #d1fae5; font-size: 0.88rem; outline: none; transition: border-color 0.2s; font-family: Georgia, serif; }
     input:focus { border-color: #4ade8066; }
     input.italic { font-style: italic; }
-
     .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
     .field { margin-bottom: 0.8rem; }
-
-    /* Branches */
     .branch-row { display: flex; gap: 0.5rem; margin-bottom: 0.45rem; align-items: center; }
-    .branch-num {
-      width: 26px; height: 26px; border-radius: 50%;
-      background: #14532d; border: 1px solid #4ade8044;
-      display: flex; align-items: center; justify-content: center;
-      color: #86efac; font-size: 0.68rem; font-weight: 700; flex-shrink: 0;
-    }
-    .btn-remove {
-      background: #7f1d1d44; border: 1px solid #dc262633;
-      color: #f87171; border-radius: 6px;
-      width: 26px; height: 26px; cursor: pointer; flex-shrink: 0;
-      font-size: 1rem; display: flex; align-items: center; justify-content: center;
-    }
-    .btn-add {
-      background: transparent; border: 1px dashed #4ade8033;
-      color: #4ade80; border-radius: 8px;
-      padding: 0.35rem 0.9rem; cursor: pointer; font-size: 0.78rem;
-      margin-top: 0.3rem; font-family: Georgia, serif;
-    }
+    .branch-num { width: 26px; height: 26px; border-radius: 50%; background: #14532d; border: 1px solid #4ade8044; display: flex; align-items: center; justify-content: center; color: #86efac; font-size: 0.68rem; font-weight: 700; flex-shrink: 0; }
+    .btn-remove { background: #7f1d1d44; border: 1px solid #dc262633; color: #f87171; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; flex-shrink: 0; font-size: 1rem; }
+    .btn-add { background: transparent; border: 1px dashed #4ade8033; color: #4ade80; border-radius: 8px; padding: 0.35rem 0.9rem; cursor: pointer; font-size: 0.78rem; margin-top: 0.3rem; font-family: Georgia, serif; }
     .btn-add:hover { border-color: #4ade80; }
-
-    /* Crown compass */
-    .compass {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: auto auto auto;
-      gap: 0.5rem; max-width: 340px; margin: 0 auto;
-    }
-    .compass-center {
-      display: flex; align-items: center; justify-content: center;
-    }
-    .tree-icon {
-      width: 52px; height: 52px; border-radius: 50%;
-      border: 2px solid #4ade8033;
-      background: radial-gradient(circle, #14532d, #050f07);
-      display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
-    }
+    .compass { display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: auto auto auto; gap: 0.5rem; max-width: 340px; margin: 0 auto; }
+    .compass-center { display: flex; align-items: center; justify-content: center; }
+    .tree-icon { width: 52px; height: 52px; border-radius: 50%; border: 2px solid #4ade8033; background: radial-gradient(circle, #14532d, #050f07); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
     .mini-label { color: #86efac66; font-size: 0.65rem; text-align: center; display: block; margin-bottom: 0.25rem; text-transform: none; letter-spacing: 0; }
     .mini-input { text-align: center !important; padding: 0.45rem 0.4rem !important; }
-
-    .crown-total {
-      margin-top: 1.2rem; text-align: center;
-      background: #14532d22; border: 1px solid #4ade8022;
-      border-radius: 10px; padding: 0.75rem;
-    }
+    .crown-total { margin-top: 1.2rem; text-align: center; background: #14532d22; border: 1px solid #4ade8022; border-radius: 10px; padding: 0.75rem; }
     .crown-total span { color: #86efac88; font-size: 0.78rem; }
     .crown-total strong { color: #4ade80; font-size: 1.3rem; margin-left: 0.6rem; }
-
-    /* Error */
-    .error-box {
-      color: #fca5a5; font-size: 0.82rem; margin-bottom: 1rem;
-      text-align: center; background: #450a0a55;
-      border: 1px solid #dc262633; border-radius: 8px; padding: 0.6rem;
-    }
-
-    /* Submit */
-    .btn-submit {
-      width: 100%; padding: 0.95rem; margin-top: 0.5rem;
-      background: linear-gradient(135deg, #166534, #15803d);
-      border: none; border-radius: 10px; color: #dcfce7;
-      font-size: 1rem; font-weight: 700; cursor: pointer;
-      letter-spacing: 0.04em; transition: all 0.3s;
-      font-family: Georgia, serif;
-    }
+    .error-box { color: #fca5a5; font-size: 0.82rem; margin-bottom: 1rem; text-align: center; background: #450a0a55; border: 1px solid #dc262633; border-radius: 8px; padding: 0.6rem; }
+    .btn-submit { width: 100%; padding: 0.95rem; margin-top: 0.5rem; background: linear-gradient(135deg, #166534, #15803d); border: none; border-radius: 10px; color: #dcfce7; font-size: 1rem; font-weight: 700; cursor: pointer; letter-spacing: 0.04em; transition: all 0.3s; font-family: Georgia, serif; }
     .btn-submit:hover { background: linear-gradient(135deg, #15803d, #16a34a); }
     .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-submit.success { background: linear-gradient(135deg, #15803d, #16a34a); box-shadow: 0 0 24px rgba(74,222,128,0.35); }
-
-    /* Table */
-    .table-card {
-      max-width: 680px; margin: 2rem auto 0;
-      background: rgba(7,20,10,0.8);
-      border: 1px solid #4ade8022; border-radius: 12px;
-      padding: 1.5rem; backdrop-filter: blur(10px);
-    }
+    .btn-submit.success { background: linear-gradient(135deg,#15803d,#16a34a); box-shadow: 0 0 24px rgba(74,222,128,0.35); }
+    .table-card { max-width: 680px; margin: 2rem auto 0; background: rgba(7,20,10,0.8); border: 1px solid #4ade8022; border-radius: 12px; padding: 1.5rem; }
     .table-card h3 { color: #86efac; margin: 0 0 1rem; font-size: 0.95rem; }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
@@ -155,320 +54,243 @@
     .td-id { font-weight: 600; }
     .td-bot { font-style: italic; }
     .td-crown { color: #4ade80; font-weight: 700; }
-
-    @media (max-width: 520px) {
-      .grid-3 { grid-template-columns: 1fr; }
-      .grid-2 { grid-template-columns: 1fr; }
-      .card { padding: 1.2rem; }
-    }
+    @media (max-width: 520px) { .grid-3 { grid-template-columns: 1fr; } .grid-2 { grid-template-columns: 1fr; } .card { padding: 1.2rem; } }
   </style>
 </head>
 <body>
-  <div class="bg-dots"></div>
-
-  <div class="header">
-    <div style="font-size:2.5rem">🌳</div>
-    <h1>Tree Data Collection</h1>
-    <p>ระบบบันทึกข้อมูลต้นไม้ → Google Sheets</p>
-    <div id="statusBadge"></div>
-  </div>
-
-  <div class="card">
-
-    <!-- Location -->
-    <div class="section">
-      <div class="section-title">📍 ตำแหน่งและรหัส</div>
-      <div class="grid-3">
-        <div class="field">
-          <label>Track ID *</label>
-          <input type="text" id="trackId" placeholder="T-001" />
-        </div>
-        <div class="field">
-          <label>X Coordinate</label>
-          <input type="number" id="x" placeholder="100.xxxx" step="any" />
-        </div>
-        <div class="field">
-          <label>Y Coordinate</label>
-          <input type="number" id="y" placeholder="13.xxxx" step="any" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Taxonomy -->
-    <div class="section">
-      <div class="section-title">🔬 การจำแนกชนิดพันธุ์</div>
-      <div class="field">
-        <label>ชื่อไทย</label>
-        <input type="text" id="nameThai" placeholder="เช่น ไม้สัก, ตะเคียนทอง" />
-      </div>
-      <div class="field">
-        <label>Botanical Name</label>
-        <input type="text" id="botanical" placeholder="เช่น Tectona grandis" class="italic" />
-      </div>
-      <div class="grid-2">
-        <div class="field">
-          <label>Genus</label>
-          <input type="text" id="genus" placeholder="เช่น Tectona" class="italic" />
-        </div>
-        <div class="field">
-          <label>Species Epithet</label>
-          <input type="text" id="speciesepi" placeholder="เช่น grandis" class="italic" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Measurements -->
-    <div class="section">
-      <div class="section-title">📏 ขนาดและการวัด</div>
-      <div class="grid-2" style="margin-bottom:1rem">
-        <div class="field">
-          <label>GBH (cm)</label>
-          <input type="number" id="gbh" placeholder="เส้นรอบวงหน้าอก" step="any" />
-        </div>
-        <div class="field">
-          <label>Height (m)</label>
-          <input type="number" id="height" placeholder="ความสูง" step="any" />
-        </div>
-      </div>
-
-      <label style="margin-bottom:0.5rem">Branches GBH (cm)</label>
-      <div id="branches"></div>
-      <button class="btn-add" onclick="addBranch()">+ เพิ่มกิ่ง</button>
-    </div>
-
-    <!-- Crown Cover -->
-    <div class="section">
-      <div class="section-title">🌿 Crown Cover (m)</div>
-      <div class="compass">
-        <div></div>
-        <div>
-          <span class="mini-label">North ↑</span>
-          <input type="number" id="crowncoverN" placeholder="0.0" step="any" class="mini-input" oninput="updateTotal()" />
-        </div>
-        <div></div>
-
-        <div>
-          <span class="mini-label">← West</span>
-          <input type="number" id="crowncovW" placeholder="0.0" step="any" class="mini-input" oninput="updateTotal()" />
-        </div>
-        <div class="compass-center">
-          <div class="tree-icon">🌳</div>
-        </div>
-        <div>
-          <span class="mini-label">East →</span>
-          <input type="number" id="crowncovE" placeholder="0.0" step="any" class="mini-input" oninput="updateTotal()" />
-        </div>
-
-        <div></div>
-        <div>
-          <span class="mini-label">South ↓</span>
-          <input type="number" id="crowncovS" placeholder="0.0" step="any" class="mini-input" oninput="updateTotal()" />
-        </div>
-        <div></div>
-      </div>
-
-      <div class="crown-total">
-        <span>Crown Cover รวม (N+S+E+W)</span>
-        <strong id="crownTotal">0.00 m</strong>
-      </div>
-    </div>
-
-    <div id="errorBox" class="error-box" style="display:none"></div>
-
-    <button class="btn-submit" id="submitBtn" onclick="submitForm()">
-      💾 บันทึกลง Google Sheets
-    </button>
-  </div>
-
-  <!-- Records -->
-  <div class="table-card" id="tableCard" style="display:none">
-    <h3>📋 รายการที่บันทึกในเซสชันนี้</h3>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>เวลา</th><th>Track ID</th><th>ชื่อไทย</th>
-            <th>Botanical</th><th>GBH</th><th>Height</th><th>Crown Total</th>
-          </tr>
-        </thead>
-        <tbody id="recordsBody"></tbody>
-      </table>
+<div class="bg-dots"></div>
+<div class="header">
+  <div style="font-size:2.5rem">&#127795;</div>
+  <h1>Tree Data Collection</h1>
+  <p>&#xe23a;&#xe23a;&#xe1a1;&#xe1a1; Google Sheets</p>
+  <div id="statusBadge"></div>
+</div>
+<div class="card">
+  <div class="section">
+    <div class="section-title">&#128205; Location & ID</div>
+    <div class="grid-3">
+      <div class="field"><label>Track ID *</label><input type="text" id="trackId" placeholder="T-001" /></div>
+      <div class="field"><label>X Coordinate</label><input type="number" id="x" placeholder="100.xxxx" step="any" /></div>
+      <div class="field"><label>Y Coordinate</label><input type="number" id="y" placeholder="13.xxxx" step="any" /></div>
     </div>
   </div>
+  <div class="section">
+    <div class="section-title">&#128302; Species Classification</div>
+    <div class="field"><label>&#xe0a1;&#xe2b7;&#xe48;&#xe2d;&#xe44;&#xe17;&#xe22;</label><input type="text" id="nameThai" placeholder="&#xe2a;&#xe31;&#xe01;, &#xe15;&#xe30;&#xe40;&#xe04;&#xe35;&#xe22;&#xe19;&#xe17;&#xe2d;&#xe07;" /></div>
+    <div class="field"><label>Botanical Name</label><input type="text" id="botanical" class="italic" placeholder="Tectona grandis" /></div>
+    <div class="grid-2">
+      <div class="field"><label>Genus</label><input type="text" id="genus" class="italic" placeholder="Tectona" /></div>
+      <div class="field"><label>Species Epithet</label><input type="text" id="speciesepi" class="italic" placeholder="grandis" /></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">&#128207; Measurements</div>
+    <div class="grid-2" style="margin-bottom:1rem">
+      <div class="field"><label>GBH (cm)</label><input type="number" id="gbh" placeholder="Girth at Breast Height" step="any" /></div>
+      <div class="field"><label>Height (m)</label><input type="number" id="height" placeholder="Tree Height" step="any" /></div>
+    </div>
+    <label style="margin-bottom:0.5rem">Branches GBH (cm)</label>
+    <div id="branches"></div>
+    <button class="btn-add" onclick="addBranch()">+ Add Branch</button>
+  </div>
+  <div class="section">
+    <div class="section-title">&#127807; Crown Cover (m)</div>
+    <div class="compass">
+      <div></div>
+      <div><span class="mini-label">North &#8593;</span><input type="number" id="crowncoverN" placeholder="0.0" step="any" class="mini-input" oninput="updateTotal()" /></div>
+      <div></div>
+      <div><span class="mini-label">&#8592; West</span><input type="number" id="crowncovW" placeholder="0.0" step="any" class="mini-input" oninput="updateTotal()" /></div>
+      <div class="compass-center"><div class="tree-icon">&#127795;</div></div>
+      <div><span class="mini-label">East &#8594;</span><input type="number" id="crowncovE" placeholder="0.0" step="any" class="mini-input" oninput="updateTotal()" /></div>
+      <div></div>
+      <div><span class="mini-label">South &#8595;</span><input type="number" id="crowncovS" placeholder="0.0" step="any" class="mini-input" oninput="updateTotal()" /></div>
+      <div></div>
+    </div>
+    <div class="crown-total">
+      <span>Crown Cover Total (N+S+E+W)</span>
+      <strong id="crownTotal">0.00 m</strong>
+    </div>
+  </div>
+  <div id="errorBox" class="error-box" style="display:none"></div>
+  <button class="btn-submit" id="submitBtn" onclick="submitForm()">&#128190; Save to Google Sheets</button>
+</div>
+<div class="table-card" id="tableCard" style="display:none">
+  <h3>&#128203; Records this session</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Time</th><th>Track ID</th><th>Thai Name</th><th>Botanical</th><th>GBH</th><th>Height</th><th>Crown</th></tr></thead>
+      <tbody id="recordsBody"></tbody>
+    </table>
+  </div>
+</div>
+<script>
+  var SHEET_URL = "https://script.google.com/macros/s/AKfycbymL5OYrLFtc8iCt-zEd40TbSvUG9NFcDfi-gDAHa3OoqXQ0CqB0w6dI5pd2UDsXuZDFg/exec";
+  var records = [];
 
-  <script>
-    const SHEET_URL = "https://script.google.com/macros/s/AKfycbzGbuChC5S0E9GtP6NPBkeJq2t4IblLmkl84N-um9rDmCxaXdemBeLF5QOuDzuJHm8Bpw/exec";
+  window.onload = function() { addBranch(true); };
 
-    let branchCount = 1;
-    let records = [];
+  function addBranch(first) {
+    var container = document.getElementById("branches");
+    var idx = container.children.length + 1;
+    var row = document.createElement("div");
+    row.className = "branch-row";
+    row.id = "branch-" + idx;
+    row.innerHTML = '<div class="branch-num">' + idx + '</div>'
+      + '<input type="number" placeholder="GBH' + idx + '" step="any" style="flex:1;background:#071a0d;border:1px solid #4ade8022;border-radius:8px;padding:0.55rem 0.75rem;color:#d1fae5;font-size:0.88rem;outline:none;" onfocus="this.style.borderColor=\'#4ade8066\'" onblur="this.style.borderColor=\'#4ade8022\'" />'
+      + '<button class="btn-remove" onclick="removeBranch(' + idx + ')" style="display:' + (first ? 'none' : 'block') + '">x</button>';
+    container.appendChild(row);
+  }
 
-    // Init first branch
-    window.onload = () => addBranch(true);
+  function removeBranch(idx) {
+    var el = document.getElementById("branch-" + idx);
+    if (el) el.remove();
+    var rows = document.querySelectorAll(".branch-row");
+    rows.forEach(function(r, i) {
+      r.id = "branch-" + (i+1);
+      r.querySelector(".branch-num").textContent = i+1;
+      r.querySelector("input").placeholder = "GBH" + (i+1);
+      r.querySelector("button").setAttribute("onclick", "removeBranch(" + (i+1) + ")");
+      r.querySelector("button").style.display = rows.length === 1 ? "none" : "block";
+    });
+  }
 
-    function addBranch(first = false) {
-      const container = document.getElementById("branches");
-      const idx = container.children.length + 1;
-      const row = document.createElement("div");
-      row.className = "branch-row";
-      row.id = "branch-" + idx;
-      row.innerHTML = `
-        <div class="branch-num">${idx}</div>
-        <input type="number" placeholder="GBH${idx}" step="any" style="flex:1;background:#071a0d;border:1px solid #4ade8022;border-radius:8px;padding:0.55rem 0.75rem;color:#d1fae5;font-size:0.88rem;outline:none;" onfocus="this.style.borderColor='#4ade8066'" onblur="this.style.borderColor='#4ade8022'" />
-        <button class="btn-remove" onclick="removeBranch(${idx})" style="display:${first ? 'none' : 'flex'}">×</button>
-      `;
-      container.appendChild(row);
+  function getBranches() {
+    var rows = document.querySelectorAll(".branch-row");
+    return Array.from(rows).map(function(r) { return { gbh: r.querySelector("input").value || "" }; });
+  }
+
+  function updateTotal() {
+    var n = parseFloat(document.getElementById("crowncoverN").value) || 0;
+    var s = parseFloat(document.getElementById("crowncovS").value) || 0;
+    var e = parseFloat(document.getElementById("crowncovE").value) || 0;
+    var w = parseFloat(document.getElementById("crowncovW").value) || 0;
+    var total = (n + s + e + w).toFixed(2);
+    document.getElementById("crownTotal").textContent = total + " m";
+    return total;
+  }
+
+  function showBadge(type, msg) {
+    document.getElementById("statusBadge").innerHTML = '<div class="badge badge-' + type + '">' + msg + '</div>';
+    if (type !== "count") {
+      setTimeout(function() { updateCountBadge(); }, 3500);
     }
+  }
 
-    function removeBranch(idx) {
-      const el = document.getElementById("branch-" + idx);
-      if (el) el.remove();
-      // Re-number
-      const rows = document.querySelectorAll(".branch-row");
-      rows.forEach((r, i) => {
-        r.id = "branch-" + (i + 1);
-        r.querySelector(".branch-num").textContent = i + 1;
-        const inp = r.querySelector("input");
-        inp.placeholder = "GBH" + (i + 1);
-        const btn = r.querySelector("button");
-        btn.setAttribute("onclick", `removeBranch(${i + 1})`);
-        btn.style.display = rows.length === 1 ? "none" : "flex";
-      });
+  function updateCountBadge() {
+    if (records.length > 0) {
+      document.getElementById("statusBadge").innerHTML = '<div class="badge badge-count">Records: ' + records.length + '</div>';
+    } else {
+      document.getElementById("statusBadge").innerHTML = "";
     }
+  }
 
-    function getBranches() {
-      const rows = document.querySelectorAll(".branch-row");
-      return Array.from(rows).map((r, i) => ({
-        gbh: r.querySelector("input").value || ""
-      }));
-    }
+  function showError(msg) {
+    var el = document.getElementById("errorBox");
+    el.textContent = msg;
+    el.style.display = "block";
+    setTimeout(function() { el.style.display = "none"; }, 5000);
+  }
 
-    function updateTotal() {
-      const n = parseFloat(document.getElementById("crowncoverN").value || 0);
-      const s = parseFloat(document.getElementById("crowncovS").value || 0);
-      const e = parseFloat(document.getElementById("crowncovE").value || 0);
-      const w = parseFloat(document.getElementById("crowncovW").value || 0);
-      document.getElementById("crownTotal").textContent = (n + s + e + w).toFixed(2) + " m";
-      return (n + s + e + w).toFixed(2);
-    }
+  function resetForm() {
+    ["trackId","x","y","nameThai","botanical","genus","speciesepi","gbh","height","crowncoverN","crowncovS","crowncovE","crowncovW"].forEach(function(id) {
+      document.getElementById(id).value = "";
+    });
+    document.getElementById("branches").innerHTML = "";
+    addBranch(true);
+    document.getElementById("crownTotal").textContent = "0.00 m";
+  }
 
-    function showBadge(type, msg) {
-      const el = document.getElementById("statusBadge");
-      el.innerHTML = `<div class="badge badge-${type}">${msg}</div>`;
-      if (type !== "count") setTimeout(() => { el.innerHTML = ""; updateCountBadge(); }, 3000);
-    }
+  function onSuccess(payload) {
+    var now = new Date().toLocaleTimeString();
+    records.unshift(Object.assign({}, payload, { savedAt: now }));
+    renderTable();
+    var btn = document.getElementById("submitBtn");
+    btn.className = "btn-submit success";
+    btn.textContent = "Saved Successfully!";
+    btn.disabled = false;
+    showBadge("success", "Saved to Google Sheets!");
+    setTimeout(function() {
+      btn.className = "btn-submit";
+      btn.textContent = "Save to Google Sheets";
+    }, 3000);
+    resetForm();
+  }
 
-    function updateCountBadge() {
-      if (records.length > 0) {
-        document.getElementById("statusBadge").innerHTML =
-          `<div class="badge badge-count">📋 บันทึกแล้ว ${records.length} รายการ</div>`;
+  function submitForm() {
+    var trackId = document.getElementById("trackId").value.trim();
+    if (!trackId) { showError("Please enter Track ID"); return; }
+
+    var crownTotal = updateTotal();
+    var payload = {
+      trackId: trackId,
+      x: document.getElementById("x").value,
+      y: document.getElementById("y").value,
+      nameThai: document.getElementById("nameThai").value,
+      botanical: document.getElementById("botanical").value,
+      genus: document.getElementById("genus").value,
+      speciesepi: document.getElementById("speciesepi").value,
+      gbh: document.getElementById("gbh").value,
+      branches: getBranches(),
+      height: document.getElementById("height").value,
+      crowncoverN: document.getElementById("crowncoverN").value,
+      crowncovS: document.getElementById("crowncovS").value,
+      crowncovE: document.getElementById("crowncovE").value,
+      crowncovW: document.getElementById("crowncovW").value,
+      crownTotal: crownTotal
+    };
+
+    var btn = document.getElementById("submitBtn");
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+
+    // JSONP - no CORS issue
+    var cbName = "gsCb" + Date.now();
+    window[cbName] = function(resp) {
+      delete window[cbName];
+      var s = document.getElementById("gsScript");
+      if (s) s.remove();
+      onSuccess(payload);
+    };
+
+    // Fallback after 7s
+    setTimeout(function() {
+      if (window[cbName]) {
+        delete window[cbName];
+        var s = document.getElementById("gsScript");
+        if (s) s.remove();
+        onSuccess(payload);
       }
-    }
+    }, 7000);
 
-    function showError(msg) {
-      const el = document.getElementById("errorBox");
-      el.textContent = "⚠️ " + msg;
-      el.style.display = "block";
-      setTimeout(() => el.style.display = "none", 4000);
-    }
-
-    function resetForm() {
-      ["trackId","x","y","nameThai","botanical","genus","speciesepi","gbh","height",
-       "crowncoverN","crowncovS","crowncovE","crowncovW"].forEach(id => {
-        document.getElementById(id).value = "";
-      });
-      document.getElementById("branches").innerHTML = "";
-      addBranch(true);
-      document.getElementById("crownTotal").textContent = "0.00 m";
-    }
-
-    function submitForm() {
-      const trackId = document.getElementById("trackId").value.trim();
-      if (!trackId) { showError("กรุณากรอก Track ID ก่อนบันทึก"); return; }
-
-      const crownTotal = updateTotal();
-      const payload = {
-        trackId,
-        x: document.getElementById("x").value,
-        y: document.getElementById("y").value,
-        nameThai: document.getElementById("nameThai").value,
-        botanical: document.getElementById("botanical").value,
-        genus: document.getElementById("genus").value,
-        speciesepi: document.getElementById("speciesepi").value,
-        gbh: document.getElementById("gbh").value,
-        branches: getBranches(),
-        height: document.getElementById("height").value,
-        crowncoverN: document.getElementById("crowncoverN").value,
-        crowncovS: document.getElementById("crowncovS").value,
-        crowncovE: document.getElementById("crowncovE").value,
-        crowncovW: document.getElementById("crowncovW").value,
-        crownTotal,
-      };
-
-      const btn = document.getElementById("submitBtn");
-      btn.disabled = true;
-      btn.textContent = "⏳ กำลังบันทึก...";
-
-      // ใช้ iframe + hidden form แทน fetch เพื่อหลีกเลี่ยง CORS
-      let iframe = document.getElementById("hidden-iframe");
-      if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.id = "hidden-iframe";
-        iframe.name = "hidden-iframe";
-        iframe.style.display = "none";
-        document.body.appendChild(iframe);
+    var script = document.createElement("script");
+    script.id = "gsScript";
+    script.src = SHEET_URL + "?data=" + encodeURIComponent(JSON.stringify(payload)) + "&callback=" + cbName;
+    script.onerror = function() {
+      // onerror fires due to redirect but data is already saved
+      if (window[cbName]) {
+        delete window[cbName];
+        script.remove();
+        onSuccess(payload);
       }
+    };
+    document.body.appendChild(script);
+  }
 
-      let hiddenForm = document.getElementById("hidden-form");
-      if (hiddenForm) hiddenForm.remove();
-      hiddenForm = document.createElement("form");
-      hiddenForm.id = "hidden-form";
-      hiddenForm.method = "POST";
-      hiddenForm.action = SHEET_URL;
-      hiddenForm.target = "hidden-iframe";
-      hiddenForm.style.display = "none";
-
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = "data";
-      input.value = JSON.stringify(payload);
-      hiddenForm.appendChild(input);
-      document.body.appendChild(hiddenForm);
-
-      iframe.onload = function() {
-        const now = new Date().toLocaleTimeString("th-TH");
-        records.unshift({ ...payload, savedAt: now });
-        renderTable();
-        btn.className = "btn-submit success";
-        btn.textContent = "✅ บันทึกสำเร็จ!";
-        showBadge("success", "✅ บันทึกลง Google Sheets สำเร็จ!");
-        setTimeout(() => {
-          btn.disabled = false;
-          btn.className = "btn-submit";
-          btn.textContent = "💾 บันทึกลง Google Sheets";
-        }, 3000);
-        resetForm();
-      };
-
-      hiddenForm.submit();
-    }
-
-    function renderTable() {
-      const card = document.getElementById("tableCard");
-      const body = document.getElementById("recordsBody");
-      card.style.display = "block";
-      body.innerHTML = records.map((r, i) => `
-        <tr>
-          <td class="td-time">${r.savedAt}</td>
-          <td class="td-id">${r.trackId}</td>
-          <td>${r.nameThai || "—"}</td>
-          <td class="td-bot">${r.botanical || "—"}</td>
-          <td>${r.gbh || "—"}</td>
-          <td>${r.height || "—"}</td>
-          <td class="td-crown">${r.crownTotal} m</td>
-        </tr>
-      `).join("");
-      updateCountBadge();
-    }
-  </script>
+  function renderTable() {
+    document.getElementById("tableCard").style.display = "block";
+    document.getElementById("recordsBody").innerHTML = records.map(function(r) {
+      return "<tr>"
+        + '<td class="td-time">' + r.savedAt + "</td>"
+        + '<td class="td-id">' + r.trackId + "</td>"
+        + "<td>" + (r.nameThai || "-") + "</td>"
+        + '<td class="td-bot">' + (r.botanical || "-") + "</td>"
+        + "<td>" + (r.gbh || "-") + "</td>"
+        + "<td>" + (r.height || "-") + "</td>"
+        + '<td class="td-crown">' + r.crownTotal + " m</td>"
+        + "</tr>";
+    }).join("");
+    updateCountBadge();
+  }
+</script>
 </body>
 </html>
