@@ -15,6 +15,11 @@
     .badge-success { background: #14532d; border: 1px solid #4ade80; color: #86efac; }
     .badge-error { background: #450a0a; border: 1px solid #dc2626; color: #fca5a5; }
     .badge-count { background: #14532d44; border: 1px solid #4ade8033; color: #86efac; }
+    .token-bar { max-width: 680px; margin: 0 auto 1.2rem; background: rgba(7,20,10,0.85); border: 1px solid #fbbf2444; border-radius: 12px; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+    .token-bar label { color: #fbbf24; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+    .token-bar input { flex: 1; min-width: 200px; background: #071a0d; border: 1px solid #fbbf2433; border-radius: 8px; padding: 0.5rem 0.75rem; color: #fef3c7; font-size: 0.85rem; outline: none; font-family: monospace; }
+    .token-bar input:focus { border-color: #fbbf2466; }
+    .token-status { font-size: 0.75rem; color: #fbbf2488; white-space: nowrap; }
     .card { max-width: 680px; margin: 0 auto; background: rgba(7,20,10,0.85); border: 1px solid #4ade8022; border-radius: 16px; padding: 2rem; backdrop-filter: blur(12px); box-shadow: 0 24px 64px rgba(0,0,0,0.6); }
     .section { margin-bottom: 1.8rem; }
     .section-title { color: #86efac; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; border-bottom: 1px solid #4ade8022; padding-bottom: 0.5rem; margin-bottom: 1rem; }
@@ -54,35 +59,46 @@
     .td-id { font-weight: 600; }
     .td-bot { font-style: italic; }
     .td-crown { color: #4ade80; font-weight: 700; }
-    @media (max-width: 520px) { .grid-3 { grid-template-columns: 1fr; } .grid-2 { grid-template-columns: 1fr; } .card { padding: 1.2rem; } }
+    @media (max-width: 520px) { .grid-3 { grid-template-columns: 1fr; } .grid-2 { grid-template-columns: 1fr; } .card { padding: 1.2rem; } .token-bar { flex-direction: column; align-items: stretch; } }
   </style>
 </head>
 <body>
 <div class="bg-dots"></div>
+
 <div class="header">
   <div style="font-size:2.5rem">&#127795;</div>
   <h1>Tree Data Collection</h1>
-  <p>&#xe23a;&#xe23a;&#xe1a1;&#xe1a1; Google Sheets</p>
+  <p>Save to GitHub CSV &rarr; tree-inventory.csv</p>
   <div id="statusBadge"></div>
 </div>
+
+<!-- Token Bar -->
+<div class="token-bar">
+  <label>&#128273; GitHub Token</label>
+  <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" oninput="checkToken()" />
+  <span class="token-status" id="tokenStatus">&#9679; Not set</span>
+</div>
+
 <div class="card">
   <div class="section">
-    <div class="section-title">&#128205; Location & ID</div>
+    <div class="section-title">&#128205; Location &amp; ID</div>
     <div class="grid-3">
       <div class="field"><label>Track ID *</label><input type="text" id="trackId" placeholder="T-001" /></div>
       <div class="field"><label>X Coordinate</label><input type="number" id="x" placeholder="100.xxxx" step="any" /></div>
       <div class="field"><label>Y Coordinate</label><input type="number" id="y" placeholder="13.xxxx" step="any" /></div>
     </div>
   </div>
+
   <div class="section">
     <div class="section-title">&#128302; Species Classification</div>
-    <div class="field"><label>&#xe0a1;&#xe2b7;&#xe48;&#xe2d;&#xe44;&#xe17;&#xe22;</label><input type="text" id="nameThai" placeholder="&#xe2a;&#xe31;&#xe01;, &#xe15;&#xe30;&#xe40;&#xe04;&#xe35;&#xe22;&#xe19;&#xe17;&#xe2d;&#xe07;" /></div>
+    <div class="field"><label>Thai Name &#3594;&#3639;&#3656;&#3629;&#3652;&#3607;&#3618;</label><input type="text" id="nameThai" placeholder="&#3626;&#3633;&#3585;, &#3605;&#3632;&#3648;&#3588;&#3637;&#3618;&#3609;&#3607;&#3629;&#3591;" /></div>
     <div class="field"><label>Botanical Name</label><input type="text" id="botanical" class="italic" placeholder="Tectona grandis" /></div>
     <div class="grid-2">
       <div class="field"><label>Genus</label><input type="text" id="genus" class="italic" placeholder="Tectona" /></div>
       <div class="field"><label>Species Epithet</label><input type="text" id="speciesepi" class="italic" placeholder="grandis" /></div>
     </div>
   </div>
+
   <div class="section">
     <div class="section-title">&#128207; Measurements</div>
     <div class="grid-2" style="margin-bottom:1rem">
@@ -93,6 +109,7 @@
     <div id="branches"></div>
     <button class="btn-add" onclick="addBranch()">+ Add Branch</button>
   </div>
+
   <div class="section">
     <div class="section-title">&#127807; Crown Cover (m)</div>
     <div class="compass">
@@ -111,9 +128,11 @@
       <strong id="crownTotal">0.00 m</strong>
     </div>
   </div>
+
   <div id="errorBox" class="error-box" style="display:none"></div>
-  <button class="btn-submit" id="submitBtn" onclick="submitForm()">&#128190; Save to Google Sheets</button>
+  <button class="btn-submit" id="submitBtn" onclick="submitForm()">&#128190; Save to GitHub CSV</button>
 </div>
+
 <div class="table-card" id="tableCard" style="display:none">
   <h3>&#128203; Records this session</h3>
   <div class="table-wrap">
@@ -123,11 +142,31 @@
     </table>
   </div>
 </div>
+
 <script>
-  var SHEET_URL = "https://script.google.com/macros/s/AKfycbymL5OYrLFtc8iCt-zEd40TbSvUG9NFcDfi-gDAHa3OoqXQ0CqB0w6dI5pd2UDsXuZDFg/exec";
+  var GITHUB_USER = "srichaichana";
+  var GITHUB_REPO = "tree-form";
+  var CSV_FILE    = "tree-inventory.csv";
+  var CSV_HEADERS = "Timestamp,Track_ID,X,Y,Thai_Name,Botanical,Genus,Speciesepi,GBH,Branches_GBH,Height,Crown_N,Crown_S,Crown_E,Crown_W,Crown_Total\n";
+
   var records = [];
 
   window.onload = function() { addBranch(true); };
+
+  function checkToken() {
+    var t = document.getElementById("ghToken").value.trim();
+    var s = document.getElementById("tokenStatus");
+    if (t.startsWith("ghp_") && t.length > 10) {
+      s.textContent = "\u2705 Ready";
+      s.style.color = "#4ade80";
+    } else if (t.length > 0) {
+      s.textContent = "\u26a0\ufe0f Invalid format";
+      s.style.color = "#fbbf24";
+    } else {
+      s.textContent = "\u25cf Not set";
+      s.style.color = "#fbbf2488";
+    }
+  }
 
   function addBranch(first) {
     var container = document.getElementById("branches");
@@ -149,36 +188,44 @@
       r.id = "branch-" + (i+1);
       r.querySelector(".branch-num").textContent = i+1;
       r.querySelector("input").placeholder = "GBH" + (i+1);
-      r.querySelector("button").setAttribute("onclick", "removeBranch(" + (i+1) + ")");
+      r.querySelector("button").setAttribute("onclick","removeBranch(" + (i+1) + ")");
       r.querySelector("button").style.display = rows.length === 1 ? "none" : "block";
     });
   }
 
   function getBranches() {
     var rows = document.querySelectorAll(".branch-row");
-    return Array.from(rows).map(function(r) { return { gbh: r.querySelector("input").value || "" }; });
+    return Array.from(rows).map(function(r,i) {
+      return "GBH"+(i+1)+":"+( r.querySelector("input").value || "");
+    }).join("|");
   }
 
   function updateTotal() {
-    var n = parseFloat(document.getElementById("crowncoverN").value) || 0;
-    var s = parseFloat(document.getElementById("crowncovS").value) || 0;
-    var e = parseFloat(document.getElementById("crowncovE").value) || 0;
-    var w = parseFloat(document.getElementById("crowncovW").value) || 0;
-    var total = (n + s + e + w).toFixed(2);
-    document.getElementById("crownTotal").textContent = total + " m";
-    return total;
+    var n = parseFloat(document.getElementById("crowncoverN").value)||0;
+    var s = parseFloat(document.getElementById("crowncovS").value)||0;
+    var e = parseFloat(document.getElementById("crowncovE").value)||0;
+    var w = parseFloat(document.getElementById("crowncovW").value)||0;
+    var t = (n+s+e+w).toFixed(2);
+    document.getElementById("crownTotal").textContent = t + " m";
+    return t;
+  }
+
+  function csvEscape(v) {
+    v = String(v||"");
+    if (v.indexOf(",")>=0 || v.indexOf('"')>=0 || v.indexOf("\n")>=0) {
+      return '"' + v.replace(/"/g,'""') + '"';
+    }
+    return v;
   }
 
   function showBadge(type, msg) {
-    document.getElementById("statusBadge").innerHTML = '<div class="badge badge-' + type + '">' + msg + '</div>';
-    if (type !== "count") {
-      setTimeout(function() { updateCountBadge(); }, 3500);
-    }
+    document.getElementById("statusBadge").innerHTML = '<div class="badge badge-'+type+'">'+msg+'</div>';
+    if (type !== "count") setTimeout(updateCountBadge, 3500);
   }
 
   function updateCountBadge() {
     if (records.length > 0) {
-      document.getElementById("statusBadge").innerHTML = '<div class="badge badge-count">Records: ' + records.length + '</div>';
+      document.getElementById("statusBadge").innerHTML = '<div class="badge badge-count">&#128203; '+records.length+' records saved</div>';
     } else {
       document.getElementById("statusBadge").innerHTML = "";
     }
@@ -188,11 +235,12 @@
     var el = document.getElementById("errorBox");
     el.textContent = msg;
     el.style.display = "block";
-    setTimeout(function() { el.style.display = "none"; }, 5000);
+    setTimeout(function(){ el.style.display="none"; }, 6000);
   }
 
   function resetForm() {
-    ["trackId","x","y","nameThai","botanical","genus","speciesepi","gbh","height","crowncoverN","crowncovS","crowncovE","crowncovW"].forEach(function(id) {
+    ["trackId","x","y","nameThai","botanical","genus","speciesepi",
+     "gbh","height","crowncoverN","crowncovS","crowncovE","crowncovW"].forEach(function(id){
       document.getElementById(id).value = "";
     });
     document.getElementById("branches").innerHTML = "";
@@ -200,96 +248,118 @@
     document.getElementById("crownTotal").textContent = "0.00 m";
   }
 
-  function onSuccess(payload) {
-    var now = new Date().toLocaleTimeString();
-    records.unshift(Object.assign({}, payload, { savedAt: now }));
-    renderTable();
-    var btn = document.getElementById("submitBtn");
-    btn.className = "btn-submit success";
-    btn.textContent = "Saved Successfully!";
-    btn.disabled = false;
-    showBadge("success", "Saved to Google Sheets!");
-    setTimeout(function() {
-      btn.className = "btn-submit";
-      btn.textContent = "Save to Google Sheets";
-    }, 3000);
-    resetForm();
+  function renderTable() {
+    document.getElementById("tableCard").style.display = "block";
+    document.getElementById("recordsBody").innerHTML = records.map(function(r){
+      return "<tr>"
+        +'<td class="td-time">'+r.savedAt+"</td>"
+        +'<td class="td-id">'+r.trackId+"</td>"
+        +"<td>"+(r.nameThai||"-")+"</td>"
+        +'<td class="td-bot">'+(r.botanical||"-")+"</td>"
+        +"<td>"+(r.gbh||"-")+"</td>"
+        +"<td>"+(r.height||"-")+"</td>"
+        +'<td class="td-crown">'+r.crownTotal+" m</td>"
+        +"</tr>";
+    }).join("");
+    updateCountBadge();
   }
 
-  function submitForm() {
+  async function submitForm() {
+    var token = document.getElementById("ghToken").value.trim();
+    if (!token) { showError("Please enter your GitHub Token first"); return; }
+
     var trackId = document.getElementById("trackId").value.trim();
     if (!trackId) { showError("Please enter Track ID"); return; }
 
     var crownTotal = updateTotal();
-    var payload = {
-      trackId: trackId,
-      x: document.getElementById("x").value,
-      y: document.getElementById("y").value,
-      nameThai: document.getElementById("nameThai").value,
-      botanical: document.getElementById("botanical").value,
-      genus: document.getElementById("genus").value,
-      speciesepi: document.getElementById("speciesepi").value,
-      gbh: document.getElementById("gbh").value,
-      branches: getBranches(),
-      height: document.getElementById("height").value,
-      crowncoverN: document.getElementById("crowncoverN").value,
-      crowncovS: document.getElementById("crowncovS").value,
-      crowncovE: document.getElementById("crowncovE").value,
-      crowncovW: document.getElementById("crowncovW").value,
-      crownTotal: crownTotal
-    };
+    var now = new Date();
+    var timestamp = now.toLocaleString("th-TH");
+
+    var row = [
+      timestamp,
+      trackId,
+      document.getElementById("x").value,
+      document.getElementById("y").value,
+      document.getElementById("nameThai").value,
+      document.getElementById("botanical").value,
+      document.getElementById("genus").value,
+      document.getElementById("speciesepi").value,
+      document.getElementById("gbh").value,
+      getBranches(),
+      document.getElementById("height").value,
+      document.getElementById("crowncoverN").value,
+      document.getElementById("crowncovS").value,
+      document.getElementById("crowncovE").value,
+      document.getElementById("crowncovW").value,
+      crownTotal
+    ].map(csvEscape).join(",") + "\n";
 
     var btn = document.getElementById("submitBtn");
     btn.disabled = true;
     btn.textContent = "Saving...";
 
-    // JSONP - no CORS issue
-    var cbName = "gsCb" + Date.now();
-    window[cbName] = function(resp) {
-      delete window[cbName];
-      var s = document.getElementById("gsScript");
-      if (s) s.remove();
-      onSuccess(payload);
+    var apiBase = "https://api.github.com/repos/" + GITHUB_USER + "/" + GITHUB_REPO + "/contents/" + CSV_FILE;
+    var headers = {
+      "Authorization": "token " + token,
+      "Content-Type": "application/json",
+      "Accept": "application/vnd.github.v3+json"
     };
 
-    // Fallback after 7s
-    setTimeout(function() {
-      if (window[cbName]) {
-        delete window[cbName];
-        var s = document.getElementById("gsScript");
-        if (s) s.remove();
-        onSuccess(payload);
-      }
-    }, 7000);
+    try {
+      // Step 1: Get existing file (if any)
+      var sha = null;
+      var existingContent = CSV_HEADERS;
 
-    var script = document.createElement("script");
-    script.id = "gsScript";
-    script.src = SHEET_URL + "?data=" + encodeURIComponent(JSON.stringify(payload)) + "&callback=" + cbName;
-    script.onerror = function() {
-      // onerror fires due to redirect but data is already saved
-      if (window[cbName]) {
-        delete window[cbName];
-        script.remove();
-        onSuccess(payload);
+      var getResp = await fetch(apiBase, { headers: headers });
+      if (getResp.ok) {
+        var fileData = await getResp.json();
+        sha = fileData.sha;
+        existingContent = atob(fileData.content.replace(/\n/g,""));
       }
-    };
-    document.body.appendChild(script);
-  }
 
-  function renderTable() {
-    document.getElementById("tableCard").style.display = "block";
-    document.getElementById("recordsBody").innerHTML = records.map(function(r) {
-      return "<tr>"
-        + '<td class="td-time">' + r.savedAt + "</td>"
-        + '<td class="td-id">' + r.trackId + "</td>"
-        + "<td>" + (r.nameThai || "-") + "</td>"
-        + '<td class="td-bot">' + (r.botanical || "-") + "</td>"
-        + "<td>" + (r.gbh || "-") + "</td>"
-        + "<td>" + (r.height || "-") + "</td>"
-        + '<td class="td-crown">' + r.crownTotal + " m</td>"
-        + "</tr>";
-    }).join("");
-    updateCountBadge();
+      // Step 2: Append new row
+      var newContent = existingContent + row;
+      var encoded = btoa(unescape(encodeURIComponent(newContent)));
+
+      var body = {
+        message: "Add tree record: " + trackId + " - " + timestamp,
+        content: encoded
+      };
+      if (sha) body.sha = sha;
+
+      var putResp = await fetch(apiBase, {
+        method: "PUT",
+        headers: headers,
+        body: JSON.stringify(body)
+      });
+
+      if (!putResp.ok) {
+        var err = await putResp.json();
+        throw new Error(err.message || "GitHub API error");
+      }
+
+      // Success
+      records.unshift({ trackId:trackId, nameThai:document.getElementById("nameThai").value,
+        botanical:document.getElementById("botanical").value, gbh:document.getElementById("gbh").value,
+        height:document.getElementById("height").value, crownTotal:crownTotal,
+        savedAt:now.toLocaleTimeString() });
+      renderTable();
+      btn.className = "btn-submit success";
+      btn.textContent = "Saved to GitHub!";
+      showBadge("success", "&#10003; Saved to tree-inventory.csv");
+      setTimeout(function(){
+        btn.disabled = false;
+        btn.className = "btn-submit";
+        btn.textContent = "Save to GitHub CSV";
+      }, 3000);
+      resetForm();
+
+    } catch(err) {
+      btn.disabled = false;
+      btn.textContent = "Save to GitHub CSV";
+      showBadge("error", "&#10007; Error: " + err.message);
+      showError("Error: " + err.message);
+    }
   }
 </script>
 </body>
