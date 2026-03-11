@@ -6,6 +6,7 @@
   <title>Tree Inventory</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
     :root {
       --green: #4ade80; --green-dark: #166534; --green-mid: #14532d;
@@ -112,6 +113,21 @@
       .utm-row { grid-template-columns: 1fr; }
       .card { padding: 1rem; }
     }
+
+    /* Email Panel */
+    .email-card { max-width: 700px; margin: 1.5rem auto 0; background: var(--card); border: 1px solid #4ade8033; border-radius: 12px; padding: 1.5rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+    .email-card h3 { color: var(--green); margin: 0 0 1rem; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; display: flex; align-items: center; gap: 0.5rem; }
+    .emailjs-config { background: #040d0688; border: 1px solid #4ade8022; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .emailjs-config-title { color: #4ade8077; font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.6rem; }
+    .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    input[type=email] { width: 100%; background: #040d06; border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem 0.7rem; color: var(--text); font-size: 0.85rem; outline: none; transition: border-color 0.2s; font-family: 'Courier New', monospace; }
+    input[type=email]:focus { border-color: #4ade8066; }
+    .btn-send-email { width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #1e3a5f, #1d4ed8); border: none; border-radius: 8px; color: #dbeafe; font-size: 0.85rem; font-weight: 700; cursor: pointer; letter-spacing: 0.08em; text-transform: uppercase; transition: all 0.3s; font-family: 'Courier New', monospace; margin-top: 0.5rem; }
+    .btn-send-email:hover { background: linear-gradient(135deg, #1d4ed8, #2563eb); box-shadow: 0 0 20px #3b82f633; }
+    .btn-send-email:disabled { opacity: 0.5; cursor: not-allowed; }
+    .today-count { font-size: 0.68rem; color: #4ade8066; margin-bottom: 0.8rem; letter-spacing: 0.05em; }
+    .btn-download-csv { background: transparent; border: 1px dashed #4ade8044; color: var(--green); border-radius: 6px; padding: 0.4rem 1rem; cursor: pointer; font-size: 0.72rem; font-family: 'Courier New', monospace; letter-spacing: 0.05em; transition: all 0.2s; width: 100%; margin-top: 0.4rem; }
+    .btn-download-csv:hover { border-color: var(--green); background: #14532d22; }
   </style>
 </head>
 <body>
@@ -266,6 +282,45 @@
       <tbody id="recordsBody"></tbody>
     </table>
   </div>
+</div>
+
+<!-- Email Export -->
+<div class="email-card" id="emailCard" style="display:none;">
+  <h3>&#9993;&#65039; Send Today's Data by Email</h3>
+
+  <div id="todayCount" class="today-count"></div>
+
+  <!-- EmailJS Config -->
+  <div class="emailjs-config">
+    <div class="emailjs-config-title">&#9881; EmailJS Config (ตั้งค่าครั้งแรกครั้งเดียว)</div>
+    <div class="config-grid">
+      <div class="field">
+        <label class="field-label">Service ID</label>
+        <input type="text" id="ejsServiceId" placeholder="service_xxxxxxx" />
+      </div>
+      <div class="field">
+        <label class="field-label">Template ID</label>
+        <input type="text" id="ejsTemplateId" placeholder="template_xxxxxxx" />
+      </div>
+    </div>
+    <div class="field" style="margin-top:0.6rem;">
+      <label class="field-label">Public Key</label>
+      <input type="text" id="ejsPublicKey" placeholder="xxxxxxxxxxxxxxxxxxxx" />
+    </div>
+  </div>
+
+  <!-- To Email -->
+  <div class="field">
+    <label class="field-label">&#128231; ส่งไปที่ (To Email)</label>
+    <input type="email" id="toEmail" placeholder="recipient@example.com" />
+  </div>
+
+  <button class="btn-send-email" id="btnSendEmail" onclick="sendEmailCSV()">
+    &#128225; Send CSV via EmailJS
+  </button>
+  <button class="btn-download-csv" onclick="downloadCSV()">
+    &#8681; Download CSV (backup)
+  </button>
 </div>
 
 <script>
@@ -526,6 +581,99 @@ function resetForm() {
 }
 
 var records = [];
+
+// ─── Today filter ─────────────────────────────────────────────────────────────
+function getTodayRecords() {
+  var today = new Date().toLocaleDateString('th-TH');
+  return records.filter(function(r) {
+    return r.timestamp && r.timestamp.startsWith(today);
+  });
+}
+
+// ─── CSV builder ──────────────────────────────────────────────────────────────
+function buildCSV(rows) {
+  var headers = [
+    'Timestamp','Track ID','UTM Zone','Easting (X)','Northing (Y)',
+    'Thai Name','Botanical Name','Genus','Species Epithet',
+    'GBH (cm)','Height (m)',
+    'Crown N (m)','Crown S (m)','Crown E (m)','Crown W (m)','Crown Total (m)',
+    'Branches GBH'
+  ];
+  var lines = [headers.join(',')];
+  rows.forEach(function(r) {
+    var branches = (r.branches||[]).map(function(b){ return b.gbh||''; }).join(';');
+    var row = [
+      '"'+(r.timestamp||'')+'"',
+      '"'+(r.trackId||'')+'"',
+      '"'+(r.utmZone||'')+'"',
+      r.x||'', r.y||'',
+      '"'+(r.nameThai||'')+'"',
+      '"'+(r.botanical||'')+'"',
+      '"'+(r.genus||'')+'"',
+      '"'+(r.speciesepi||'')+'"',
+      r.gbh||'', r.height||'',
+      r.crowncoverN||'', r.crowncovS||'', r.crowncovE||'', r.crowncovW||'',
+      r.crownTotal||'',
+      '"'+branches+'"'
+    ];
+    lines.push(row.join(','));
+  });
+  return lines.join('\r\n');
+}
+
+// ─── Download CSV ─────────────────────────────────────────────────────────────
+function downloadCSV() {
+  var rows = getTodayRecords();
+  if (!rows.length) { showError('ยังไม่มีข้อมูลวันนี้ / No records today'); return; }
+  var csv = buildCSV(rows);
+  var blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  var dateStr = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = 'tree-inventory-'+dateStr+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ─── Send Email via EmailJS ───────────────────────────────────────────────────
+async function sendEmailCSV() {
+  var serviceId  = document.getElementById('ejsServiceId').value.trim();
+  var templateId = document.getElementById('ejsTemplateId').value.trim();
+  var publicKey  = document.getElementById('ejsPublicKey').value.trim();
+  var toEmail    = document.getElementById('toEmail').value.trim();
+
+  if (!serviceId || !templateId || !publicKey) {
+    showError('กรุณากรอก EmailJS Service ID, Template ID และ Public Key ให้ครบ'); return;
+  }
+  if (!toEmail) { showError('กรุณากรอก To Email'); return; }
+
+  var rows = getTodayRecords();
+  if (!rows.length) { showError('ยังไม่มีข้อมูลวันนี้ / No records today'); return; }
+
+  var csv = buildCSV(rows);
+  var dateStr = new Date().toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric' });
+
+  var btn = document.getElementById('btnSendEmail');
+  btn.disabled = true; btn.textContent = '⏳ Sending…';
+
+  try {
+    emailjs.init(publicKey);
+    await emailjs.send(serviceId, templateId, {
+      to_email:    toEmail,
+      date_str:    dateStr,
+      record_count: rows.length,
+      csv_content: csv
+    });
+    btn.textContent = '✓ Sent!';
+    showBadge('success', '&#9993; CSV sent to ' + toEmail);
+    setTimeout(function(){ btn.disabled=false; btn.textContent='📡 Send CSV via EmailJS'; }, 3500);
+  } catch(err) {
+    btn.disabled=false; btn.textContent='📡 Send CSV via EmailJS';
+    showBadge('error', '✗ Email failed: ' + (err.text||err.message||JSON.stringify(err)));
+    showError('EmailJS Error: ' + (err.text||err.message||JSON.stringify(err)));
+  }
+}
+
+
 function renderTable() {
   document.getElementById('tableCard').style.display='block';
   document.getElementById('recordsBody').innerHTML=records.map(function(r){
@@ -541,6 +689,14 @@ function renderTable() {
       +'<td class="td-num">'+r.crownTotal+' m</td>'
       +'</tr>';
   }).join('');
+
+  // Show email export panel
+  var todayRows = getTodayRecords();
+  var emailCard = document.getElementById('emailCard');
+  emailCard.style.display = 'block';
+  document.getElementById('todayCount').textContent =
+    '📋 วันนี้มีข้อมูล ' + todayRows.length + ' รายการ / Today: ' + todayRows.length + ' record(s) ready to export';
+
   updateCountBadge();
 }
 
