@@ -1,290 +1,523 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tree Data Collection</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tree Inventory</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
+    :root {
+      --green: #4ade80; --green-dark: #166534; --green-mid: #14532d;
+      --green-glow: #4ade8044; --bg: #050f07; --bg2: #0b2212; --bg3: #071a0d;
+      --text: #d1fae5; --text-dim: #86efac99; --border: #4ade8022;
+      --card: rgba(7,20,10,0.88);
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { min-height: 100vh; background: linear-gradient(160deg, #050f07 0%, #0b2212 50%, #071a0d 100%); font-family: Georgia, serif; padding: 2rem 1rem; color: #d1fae5; }
-    .bg-dots { position: fixed; inset: 0; opacity: 0.025; pointer-events: none; background-image: radial-gradient(circle at 2px 2px, #4ade80 1px, transparent 0); background-size: 36px 36px; }
-    .header { text-align: center; margin-bottom: 2rem; }
-    .header h1 { color: #86efac; font-size: 1.8rem; font-weight: 700; text-shadow: 0 0 30px #4ade8044; margin: 0.2rem 0 0; }
-    .header p { color: #4ade8066; font-size: 0.8rem; font-style: italic; margin: 0.3rem 0 0; }
-    .badge { display: inline-block; margin-top: 0.8rem; border-radius: 20px; padding: 0.35rem 1rem; font-size: 0.82rem; }
-    .badge-success { background: #14532d; border: 1px solid #4ade80; color: #86efac; }
+    body { min-height: 100vh; background: linear-gradient(160deg, var(--bg) 0%, var(--bg2) 50%, var(--bg3) 100%); font-family: 'Courier New', monospace; padding: 1.5rem 1rem 3rem; color: var(--text); }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 1.8rem; }
+    .header-icon { font-size: 2.2rem; line-height: 1; }
+    .header h1 { color: var(--green); font-size: 1.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; text-shadow: 0 0 30px var(--green-glow); margin: 0.3rem 0 0.2rem; }
+    .header p { color: #4ade8055; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; }
+    #statusBadge { min-height: 2rem; display: flex; justify-content: center; align-items: center; margin-top: 0.5rem; }
+    .badge { border-radius: 20px; padding: 0.3rem 1rem; font-size: 0.78rem; letter-spacing: 0.05em; }
+    .badge-success { background: var(--green-mid); border: 1px solid var(--green); color: var(--green); }
     .badge-error { background: #450a0a; border: 1px solid #dc2626; color: #fca5a5; }
-    .badge-count { background: #14532d44; border: 1px solid #4ade8033; color: #86efac; }
-    .card { max-width: 680px; margin: 0 auto; background: rgba(7,20,10,0.85); border: 1px solid #4ade8022; border-radius: 16px; padding: 2rem; backdrop-filter: blur(12px); box-shadow: 0 24px 64px rgba(0,0,0,0.6); }
-    .section { margin-bottom: 1.8rem; }
-    .section-title { color: #86efac; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; border-bottom: 1px solid #4ade8022; padding-bottom: 0.5rem; margin-bottom: 1rem; }
-    label { color: #86efac99; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
-    input[type=text], input[type=number] { width: 100%; background: #071a0d; border: 1px solid #4ade8022; border-radius: 8px; padding: 0.55rem 0.75rem; color: #d1fae5; font-size: 0.88rem; outline: none; transition: border-color 0.2s; font-family: Georgia, serif; }
-    input:focus { border-color: #4ade8066; }
-    input.italic { font-style: italic; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
-    .field { margin-bottom: 0.8rem; }
-    .branch-row { display: flex; gap: 0.5rem; margin-bottom: 0.45rem; align-items: center; }
-    .branch-num { width: 26px; height: 26px; border-radius: 50%; background: #14532d; border: 1px solid #4ade8044; display: flex; align-items: center; justify-content: center; color: #86efac; font-size: 0.68rem; font-weight: 700; flex-shrink: 0; }
-    .btn-remove { background: #7f1d1d44; border: 1px solid #dc262633; color: #f87171; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; flex-shrink: 0; font-size: 1rem; }
-    .btn-add { background: transparent; border: 1px dashed #4ade8033; color: #4ade80; border-radius: 8px; padding: 0.35rem 0.9rem; cursor: pointer; font-size: 0.78rem; margin-top: 0.3rem; font-family: Georgia, serif; }
-    .btn-add:hover { border-color: #4ade80; }
-    .compass { display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: auto auto auto; gap: 0.5rem; max-width: 340px; margin: 0 auto; }
+    .badge-count { background: #14532d33; border: 1px solid #4ade8033; color: var(--green); }
+
+    /* Card */
+    .card { max-width: 700px; margin: 0 auto 1.5rem; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+
+    /* Section */
+    .section { margin-bottom: 1.5rem; }
+    .section-title { display: flex; align-items: center; gap: 0.5rem; color: var(--green); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; margin-bottom: 0.9rem; }
+
+    /* Labels & Inputs */
+    .field-label { color: var(--text-dim); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 0.25rem; }
+    input[type=text], input[type=number], select {
+      width: 100%; background: #040d06; border: 1px solid var(--border);
+      border-radius: 6px; padding: 0.5rem 0.7rem; color: var(--text);
+      font-size: 0.85rem; outline: none; transition: border-color 0.2s;
+      font-family: 'Courier New', monospace;
+    }
+    input:focus, select:focus { border-color: #4ade8066; }
+    select { cursor: pointer; }
+    select option { background: #071a0d; }
+    .field { margin-bottom: 0.7rem; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.7rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+
+    /* UTM Zone selector */
+    .utm-row { display: grid; grid-template-columns: 80px 1fr 1fr; gap: 0.7rem; align-items: end; }
+    .zone-badge { display: inline-flex; align-items: center; justify-content: center; background: var(--green-mid); border: 1px solid #4ade8044; border-radius: 6px; color: var(--green); font-size: 0.75rem; font-weight: 700; padding: 0.5rem 0.4rem; text-align: center; line-height: 1.2; height: 36px; }
+
+    /* Branches */
+    .branch-row { display: flex; gap: 0.5rem; margin-bottom: 0.4rem; align-items: center; }
+    .branch-num { width: 24px; height: 24px; border-radius: 50%; background: var(--green-mid); border: 1px solid #4ade8044; display: flex; align-items: center; justify-content: center; color: var(--green); font-size: 0.65rem; font-weight: 700; flex-shrink: 0; }
+    .btn-remove { background: #7f1d1d33; border: 1px solid #dc262622; color: #f87171; border-radius: 5px; width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; font-size: 0.9rem; display:flex; align-items:center; justify-content:center; }
+    .btn-add { background: transparent; border: 1px dashed #4ade8033; color: var(--green); border-radius: 6px; padding: 0.3rem 0.8rem; cursor: pointer; font-size: 0.72rem; margin-top: 0.3rem; font-family: 'Courier New', monospace; letter-spacing: 0.05em; transition: border-color 0.2s; }
+    .btn-add:hover { border-color: var(--green); }
+
+    /* Crown compass */
+    .compass { display: grid; grid-template-columns: 1fr 80px 1fr; grid-template-rows: auto 80px auto; gap: 0.4rem; max-width: 320px; margin: 0 auto; }
     .compass-center { display: flex; align-items: center; justify-content: center; }
-    .tree-icon { width: 52px; height: 52px; border-radius: 50%; border: 2px solid #4ade8033; background: radial-gradient(circle, #14532d, #050f07); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
-    .mini-label { color: #86efac66; font-size: 0.65rem; text-align: center; display: block; margin-bottom: 0.25rem; text-transform: none; letter-spacing: 0; }
-    .mini-input { text-align: center !important; padding: 0.45rem 0.4rem !important; }
-    .crown-total { margin-top: 1.2rem; text-align: center; background: #14532d22; border: 1px solid #4ade8022; border-radius: 10px; padding: 0.75rem; }
-    .crown-total span { color: #86efac88; font-size: 0.78rem; }
-    .crown-total strong { color: #4ade80; font-size: 1.3rem; margin-left: 0.6rem; }
-    .error-box { color: #fca5a5; font-size: 0.82rem; margin-bottom: 1rem; text-align: center; background: #450a0a55; border: 1px solid #dc262633; border-radius: 8px; padding: 0.6rem; }
-    .btn-submit { width: 100%; padding: 0.95rem; margin-top: 0.5rem; background: linear-gradient(135deg, #166534, #15803d); border: none; border-radius: 10px; color: #dcfce7; font-size: 1rem; font-weight: 700; cursor: pointer; letter-spacing: 0.04em; transition: all 0.3s; font-family: Georgia, serif; }
+    .tree-icon { width: 56px; height: 56px; border-radius: 50%; border: 2px solid #4ade8033; background: radial-gradient(circle, var(--green-mid), var(--bg)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .mini-wrap { display: flex; flex-direction: column; align-items: center; }
+    .mini-label { color: #4ade8066; font-size: 0.6rem; margin-bottom: 0.2rem; font-family: 'Courier New', monospace; letter-spacing: 0.05em; }
+    .mini-input { text-align: center !important; padding: 0.4rem 0.3rem !important; font-size: 0.8rem !important; }
+    .crown-total { margin-top: 1rem; text-align: center; background: #14532d1a; border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem; }
+    .crown-total-label { color: #86efac55; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; }
+    .crown-total-val { color: var(--green); font-size: 1.2rem; font-weight: 700; margin-left: 0.5rem; font-family: 'Courier New', monospace; }
+
+    /* Map */
+    #map { width: 100%; height: 320px; border-radius: 8px; border: 1px solid var(--border); margin-top: 0.8rem; background: #040d06; }
+    .map-info { font-size: 0.68rem; color: #4ade8055; margin-top: 0.4rem; text-align: center; letter-spacing: 0.05em; }
+    .map-controls { display: flex; gap: 0.5rem; margin-top: 0.6rem; flex-wrap: wrap; }
+    .btn-map { background: var(--green-mid); border: 1px solid #4ade8044; color: var(--green); border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer; font-size: 0.72rem; font-family: 'Courier New', monospace; letter-spacing: 0.05em; transition: all 0.2s; }
+    .btn-map:hover { background: #166534; border-color: var(--green); }
+
+    /* Error */
+    .error-box { color: #fca5a5; font-size: 0.8rem; margin-bottom: 0.8rem; text-align: center; background: #450a0a44; border: 1px solid #dc262633; border-radius: 6px; padding: 0.55rem; }
+
+    /* Submit */
+    .btn-submit { width: 100%; padding: 0.85rem; margin-top: 0.3rem; background: linear-gradient(135deg, var(--green-dark), #15803d); border: none; border-radius: 8px; color: #dcfce7; font-size: 0.9rem; font-weight: 700; cursor: pointer; letter-spacing: 0.08em; text-transform: uppercase; transition: all 0.3s; font-family: 'Courier New', monospace; }
     .btn-submit:hover { background: linear-gradient(135deg, #15803d, #16a34a); }
-    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-submit.success { background: linear-gradient(135deg,#15803d,#16a34a); box-shadow: 0 0 24px rgba(74,222,128,0.35); }
-    .table-card { max-width: 680px; margin: 2rem auto 0; background: rgba(7,20,10,0.8); border: 1px solid #4ade8022; border-radius: 12px; padding: 1.5rem; }
-    .table-card h3 { color: #86efac; margin: 0 0 1rem; font-size: 0.95rem; }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-submit.success { background: linear-gradient(135deg, #15803d, #16a34a); box-shadow: 0 0 20px #4ade8033; }
+
+    /* Records table */
+    .table-card { max-width: 700px; margin: 0 auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+    .table-card h3 { color: var(--green); margin: 0 0 0.8rem; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; }
     .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
-    th { color: #4ade80; padding: 0.4rem 0.6rem; border-bottom: 1px solid #4ade8022; text-align: left; white-space: nowrap; }
-    td { color: #d1fae5cc; padding: 0.4rem 0.6rem; border-bottom: 1px solid #4ade8011; }
-    tr:nth-child(even) { background: #ffffff04; }
-    .td-time { color: #86efac66; }
-    .td-id { font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+    th { color: var(--green); padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; letter-spacing: 0.05em; }
+    td { color: #d1fae5bb; padding: 0.35rem 0.5rem; border-bottom: 1px solid #4ade8011; font-family: 'Courier New', monospace; }
+    tr:nth-child(even) { background: #ffffff03; }
+    .td-id { color: var(--green); font-weight: 700; }
     .td-bot { font-style: italic; }
-    .td-crown { color: #4ade80; font-weight: 700; }
-    @media (max-width: 520px) { .grid-3 { grid-template-columns: 1fr; } .grid-2 { grid-template-columns: 1fr; } .card { padding: 1.2rem; } }
+    .td-num { color: #86efaccc; }
+
+    @media (max-width: 560px) {
+      .grid-3 { grid-template-columns: 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .utm-row { grid-template-columns: 1fr; }
+      .card { padding: 1rem; }
+    }
   </style>
 </head>
 <body>
-<div class="bg-dots"></div>
+
 <div class="header">
-  <div style="font-size:2.5rem">&#127795;</div>
-  <h1>Tree Data Collection</h1>
-  <p>Saves to GitHub &rarr; tree-inventory.csv</p>
+  <div class="header-icon">&#127795;</div>
+  <h1>Tree Inventory</h1>
+  <p>Field Data Collection System</p>
   <div id="statusBadge"></div>
 </div>
 
 <div class="card">
-  <div class="section">
-    <div class="section-title">&#128205; Location &amp; ID</div>
-    <div class="grid-3">
-      <div class="field"><label>Track ID *</label><input type="text" id="trackId" placeholder="T-001" /></div>
-      <div class="field"><label>X Coordinate</label><input type="number" id="x" placeholder="100.xxxx" step="any" /></div>
-      <div class="field"><label>Y Coordinate</label><input type="number" id="y" placeholder="13.xxxx" step="any" /></div>
-    </div>
-  </div>
 
+  <!-- SECTION: ID & UTM -->
   <div class="section">
-    <div class="section-title">&#128302; Species Classification</div>
-    <div class="field"><label>Thai Name</label><input type="text" id="nameThai" placeholder="&#3626;&#3633;&#3585;, &#3605;&#3632;&#3648;&#3588;&#3637;&#3618;&#3609;&#3607;&#3629;&#3591;" /></div>
-    <div class="field"><label>Botanical Name</label><input type="text" id="botanical" class="italic" placeholder="Tectona grandis" /></div>
+    <div class="section-title">&#128205; Location &amp; Track ID</div>
+
+    <div class="field">
+      <label class="field-label">Track ID</label>
+      <input type="text" id="trackId" placeholder="e.g. T-001, Plot-A3" />
+    </div>
+
+    <div class="field">
+      <label class="field-label">UTM Zone</label>
+      <select id="utmZone">
+        <option value="47N">WGS84 UTM Zone 47N</option>
+        <option value="48N" selected>WGS84 UTM Zone 48N</option>
+      </select>
+    </div>
+
     <div class="grid-2">
-      <div class="field"><label>Genus</label><input type="text" id="genus" class="italic" placeholder="Tectona" /></div>
-      <div class="field"><label>Species Epithet</label><input type="text" id="speciesepi" class="italic" placeholder="grandis" /></div>
+      <div class="field">
+        <label class="field-label">Easting (X) — m</label>
+        <input type="number" id="x" placeholder="e.g. 500000" step="0.001" oninput="updateMapFromUTM()" />
+      </div>
+      <div class="field">
+        <label class="field-label">Northing (Y) — m</label>
+        <input type="number" id="y" placeholder="e.g. 1500000" step="0.001" oninput="updateMapFromUTM()" />
+      </div>
+    </div>
+
+    <div id="latlngDisplay" style="font-size:0.68rem;color:#4ade8055;margin-top:-0.3rem;margin-bottom:0.6rem;letter-spacing:0.05em;"></div>
+
+    <!-- Map -->
+    <div id="map"></div>
+    <div class="map-info">&#128204; Click on map to set coordinates &nbsp;|&nbsp; Drag marker to adjust</div>
+    <div class="map-controls">
+      <button class="btn-map" onclick="centerMap()">&#8982; Center on Marker</button>
+      <button class="btn-map" onclick="clearMarker()">&#10005; Clear Marker</button>
     </div>
   </div>
 
+  <!-- SECTION: Species -->
+  <div class="section">
+    <div class="section-title">&#128302; Species</div>
+    <div class="field">
+      <label class="field-label">Thai Name &#x0e0a;&#x0e37;&#x0e48;&#x0e2d;&#x0e44;&#x0e17;&#x0e22;</label>
+      <input type="text" id="nameThai" placeholder="&#x0e2a;&#x0e31;&#x0e01;, &#x0e15;&#x0e30;&#x0e40;&#x0e04;&#x0e35;&#x0e22;&#x0e19;&#x0e17;&#x0e2d;&#x0e07;" />
+    </div>
+    <div class="field">
+      <label class="field-label">Botanical Name</label>
+      <input type="text" id="botanical" placeholder="Tectona grandis" style="font-style:italic;" />
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label class="field-label">Genus</label>
+        <input type="text" id="genus" placeholder="Tectona" style="font-style:italic;" />
+      </div>
+      <div class="field">
+        <label class="field-label">Species Epithet</label>
+        <input type="text" id="speciesepi" placeholder="grandis" style="font-style:italic;" />
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: Measurements -->
   <div class="section">
     <div class="section-title">&#128207; Measurements</div>
-    <div class="grid-2" style="margin-bottom:1rem">
-      <div class="field"><label>GBH (cm)</label><input type="number" id="gbh" placeholder="Girth at Breast Height" step="any" /></div>
-      <div class="field"><label>Height (m)</label><input type="number" id="height" placeholder="Tree Height" step="any" /></div>
+    <div class="grid-2" style="margin-bottom:0.7rem;">
+      <div class="field">
+        <label class="field-label">GBH (cm)</label>
+        <input type="number" id="gbh" placeholder="Girth at Breast Height" step="0.1" min="0" />
+      </div>
+      <div class="field">
+        <label class="field-label">Height (m)</label>
+        <input type="number" id="height" placeholder="Total Height" step="0.1" min="0" />
+      </div>
     </div>
-    <label style="margin-bottom:0.5rem">Branches GBH (cm)</label>
+
+    <label class="field-label" style="margin-bottom:0.4rem;">Branches GBH (cm)</label>
     <div id="branches"></div>
     <button class="btn-add" onclick="addBranch()">+ Add Branch</button>
   </div>
 
+  <!-- SECTION: Crown Cover -->
   <div class="section">
     <div class="section-title">&#127807; Crown Cover (m)</div>
     <div class="compass">
       <div></div>
-      <div><span class="mini-label">North &#8593;</span><input type="number" id="crowncoverN" placeholder="0.0" step="any" class="mini-input" oninput="updateTotal()" /></div>
+      <div class="mini-wrap">
+        <span class="mini-label">N &#8593;</span>
+        <input type="number" id="crowncoverN" placeholder="0.0" step="0.1" min="0" class="mini-input" oninput="updateTotal()" />
+      </div>
       <div></div>
-      <div><span class="mini-label">&#8592; West</span><input type="number" id="crowncovW" placeholder="0.0" step="any" class="mini-input" oninput="updateTotal()" /></div>
-      <div class="compass-center"><div class="tree-icon">&#127795;</div></div>
-      <div><span class="mini-label">East &#8594;</span><input type="number" id="crowncovE" placeholder="0.0" step="any" class="mini-input" oninput="updateTotal()" /></div>
+
+      <div class="mini-wrap" style="justify-content:center;">
+        <span class="mini-label">&#8592; W</span>
+        <input type="number" id="crowncovW" placeholder="0.0" step="0.1" min="0" class="mini-input" oninput="updateTotal()" />
+      </div>
+      <div class="compass-center">
+        <div class="tree-icon">&#127795;</div>
+      </div>
+      <div class="mini-wrap" style="justify-content:center;">
+        <span class="mini-label">E &#8594;</span>
+        <input type="number" id="crowncovE" placeholder="0.0" step="0.1" min="0" class="mini-input" oninput="updateTotal()" />
+      </div>
+
       <div></div>
-      <div><span class="mini-label">South &#8595;</span><input type="number" id="crowncovS" placeholder="0.0" step="any" class="mini-input" oninput="updateTotal()" /></div>
+      <div class="mini-wrap">
+        <span class="mini-label">S &#8595;</span>
+        <input type="number" id="crowncovS" placeholder="0.0" step="0.1" min="0" class="mini-input" oninput="updateTotal()" />
+      </div>
       <div></div>
     </div>
     <div class="crown-total">
-      <span>Crown Cover Total (N+S+E+W)</span>
-      <strong id="crownTotal">0.00 m</strong>
+      <span class="crown-total-label">Total Crown (N+S+E+W)</span>
+      <span class="crown-total-val" id="crownTotal">0.00 m</span>
     </div>
   </div>
 
-  <div id="errorBox" class="error-box" style="display:none"></div>
+  <div id="errorBox" class="error-box" style="display:none;"></div>
   <button class="btn-submit" id="submitBtn" onclick="submitForm()">&#128190; Save to GitHub CSV</button>
 </div>
 
-<div class="table-card" id="tableCard" style="display:none">
-  <h3>&#128203; Records this session</h3>
+<!-- Records -->
+<div class="table-card" id="tableCard" style="display:none;">
+  <h3>&#128203; Session Records</h3>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Time</th><th>Track ID</th><th>Thai Name</th><th>Botanical</th><th>GBH</th><th>Height</th><th>Crown</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Track ID</th><th>Zone</th><th>Easting</th><th>Northing</th>
+          <th>Thai Name</th><th>Botanical</th><th>GBH</th><th>H</th><th>Crown</th>
+        </tr>
+      </thead>
       <tbody id="recordsBody"></tbody>
     </table>
   </div>
 </div>
 
 <script>
-  var records = [];
-  window.onload = function() { addBranch(true); };
+// ─── UTM to LatLng conversion ───────────────────────────────────────────────
+function utmToLatLng(easting, northing, zoneNum, isNorth) {
+  var a = 6378137.0, f = 1/298.257223563;
+  var b = a*(1-f), e2 = 1-(b*b)/(a*a), e = Math.sqrt(e2);
+  var k0 = 0.9996;
+  var x = easting - 500000;
+  var y = isNorth ? northing : northing - 10000000;
+  var M = y / k0;
+  var mu = M / (a*(1 - e2/4 - 3*e2*e2/64 - 5*e2*e2*e2/256));
+  var e1 = (1 - Math.sqrt(1-e2)) / (1 + Math.sqrt(1-e2));
+  var phi1 = mu + (3*e1/2 - 27*e1*e1*e1/32)*Math.sin(2*mu)
+           + (21*e1*e1/16 - 55*e1*e1*e1*e1/32)*Math.sin(4*mu)
+           + (151*e1*e1*e1/96)*Math.sin(6*mu);
+  var N1 = a/Math.sqrt(1-e2*Math.sin(phi1)*Math.sin(phi1));
+  var T1 = Math.tan(phi1)*Math.tan(phi1);
+  var C1 = e2/(1-e2)*Math.cos(phi1)*Math.cos(phi1);
+  var R1 = a*(1-e2)/Math.pow(1-e2*Math.sin(phi1)*Math.sin(phi1), 1.5);
+  var D = x/(N1*k0);
+  var lat = phi1 - (N1*Math.tan(phi1)/R1)*(D*D/2
+    - (5+3*T1+10*C1-4*C1*C1-9*e2/(1-e2))*D*D*D*D/24
+    + (61+90*T1+298*C1+45*T1*T1-252*e2/(1-e2)-3*C1*C1)*D*D*D*D*D*D/720);
+  var lon = (D - (1+2*T1+C1)*D*D*D/6
+    + (5-2*C1+28*T1-3*C1*C1+8*e2/(1-e2)+24*T1*T1)*D*D*D*D*D/120) / Math.cos(phi1);
+  var lonDeg = (zoneNum-1)*6 - 180 + 3 + lon*180/Math.PI;
+  return { lat: lat*180/Math.PI, lng: lonDeg };
+}
 
-  function addBranch(first) {
-    var container = document.getElementById("branches");
-    var idx = container.children.length + 1;
-    var row = document.createElement("div");
-    row.className = "branch-row";
-    row.id = "branch-" + idx;
-    row.innerHTML = '<div class="branch-num">' + idx + '</div>'
-      + '<input type="number" placeholder="GBH' + idx + '" step="any" style="flex:1;background:#071a0d;border:1px solid #4ade8022;border-radius:8px;padding:0.55rem 0.75rem;color:#d1fae5;font-size:0.88rem;outline:none;" onfocus="this.style.borderColor=\'#4ade8066\'" onblur="this.style.borderColor=\'#4ade8022\'" />'
-      + '<button class="btn-remove" onclick="removeBranch(' + idx + ')" style="display:' + (first ? 'none' : 'block') + '">x</button>';
-    container.appendChild(row);
-  }
+// ─── Map setup ───────────────────────────────────────────────────────────────
+var map = L.map('map', { zoomControl: true }).setView([13.5, 101.5], 6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap', maxZoom: 19
+}).addTo(map);
 
-  function removeBranch(idx) {
-    var el = document.getElementById("branch-" + idx);
-    if (el) el.remove();
-    var rows = document.querySelectorAll(".branch-row");
-    rows.forEach(function(r, i) {
-      r.id = "branch-" + (i+1);
-      r.querySelector(".branch-num").textContent = i+1;
-      r.querySelector("input").placeholder = "GBH"+(i+1);
-      r.querySelector("button").setAttribute("onclick","removeBranch("+(i+1)+")");
-      r.querySelector("button").style.display = rows.length===1?"none":"block";
-    });
-  }
+var marker = null;
+var allMarkers = [];
 
-  function getBranches() {
-    return Array.from(document.querySelectorAll(".branch-row")).map(function(r,i){
-      return { gbh: r.querySelector("input").value || "" };
-    });
-  }
+var greenIcon = L.divIcon({
+  html: '<div style="width:16px;height:16px;background:#4ade80;border:2px solid #14532d;border-radius:50%;box-shadow:0 0 8px #4ade8088;"></div>',
+  iconSize: [16,16], iconAnchor: [8,8], className:''
+});
 
-  function updateTotal() {
-    var n = parseFloat(document.getElementById("crowncoverN").value)||0;
-    var s = parseFloat(document.getElementById("crowncovS").value)||0;
-    var e = parseFloat(document.getElementById("crowncovE").value)||0;
-    var w = parseFloat(document.getElementById("crowncovW").value)||0;
-    var t = (n+s+e+w).toFixed(2);
-    document.getElementById("crownTotal").textContent = t + " m";
-    return t;
-  }
+function setMarker(lat, lng, label) {
+  if (marker) map.removeLayer(marker);
+  marker = L.marker([lat, lng], { icon: greenIcon, draggable: true })
+    .addTo(map)
+    .bindPopup('<b style="color:#14532d">' + (label||'Tree') + '</b><br>Lat: '+lat.toFixed(6)+'<br>Lng: '+lng.toFixed(6))
+    .openPopup();
+  marker.on('dragend', function(e) {
+    var pos = e.target.getLatLng();
+    latLngToUTM(pos.lat, pos.lng);
+  });
+}
 
-  function showBadge(type, msg) {
-    document.getElementById("statusBadge").innerHTML = '<div class="badge badge-'+type+'">'+msg+'</div>';
-    if (type !== "count") setTimeout(updateCountBadge, 3500);
-  }
-
-  function updateCountBadge() {
-    document.getElementById("statusBadge").innerHTML = records.length > 0
-      ? '<div class="badge badge-count">&#128203; '+records.length+' records saved</div>' : "";
-  }
-
-  function showError(msg) {
-    var el = document.getElementById("errorBox");
-    el.textContent = msg;
-    el.style.display = "block";
-    setTimeout(function(){ el.style.display="none"; }, 6000);
-  }
-
-  function resetForm() {
-    ["trackId","x","y","nameThai","botanical","genus","speciesepi",
-     "gbh","height","crowncoverN","crowncovS","crowncovE","crowncovW"].forEach(function(id){
-      document.getElementById(id).value = "";
-    });
-    document.getElementById("branches").innerHTML = "";
-    addBranch(true);
-    document.getElementById("crownTotal").textContent = "0.00 m";
-  }
-
-  function renderTable() {
-    document.getElementById("tableCard").style.display = "block";
-    document.getElementById("recordsBody").innerHTML = records.map(function(r){
-      return "<tr>"
-        +'<td class="td-time">'+r.savedAt+"</td>"
-        +'<td class="td-id">'+r.trackId+"</td>"
-        +"<td>"+(r.nameThai||"-")+"</td>"
-        +'<td class="td-bot">'+(r.botanical||"-")+"</td>"
-        +"<td>"+(r.gbh||"-")+"</td>"
-        +"<td>"+(r.height||"-")+"</td>"
-        +'<td class="td-crown">'+r.crownTotal+" m</td>"
-        +"</tr>";
-    }).join("");
-    updateCountBadge();
-  }
-
-  async function submitForm() {
-    var trackId = document.getElementById("trackId").value.trim();
-    if (!trackId) { showError("Please enter Track ID"); return; }
-
-    var crownTotal = updateTotal();
-    var now = new Date();
-
-    var payload = {
-      timestamp: now.toLocaleString("th-TH"),
-      trackId: trackId,
-      x: document.getElementById("x").value,
-      y: document.getElementById("y").value,
-      nameThai: document.getElementById("nameThai").value,
-      botanical: document.getElementById("botanical").value,
-      genus: document.getElementById("genus").value,
-      speciesepi: document.getElementById("speciesepi").value,
-      gbh: document.getElementById("gbh").value,
-      branches: getBranches(),
-      height: document.getElementById("height").value,
-      crowncoverN: document.getElementById("crowncoverN").value,
-      crowncovS: document.getElementById("crowncovS").value,
-      crowncovE: document.getElementById("crowncovE").value,
-      crowncovW: document.getElementById("crowncovW").value,
-      crownTotal: crownTotal
-    };
-
-    var btn = document.getElementById("submitBtn");
-    btn.disabled = true;
-    btn.textContent = "Saving...";
-
-    try {
-      var resp = await fetch("/.netlify/functions/save-tree", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      var result = await resp.json();
-      if (!resp.ok || result.error) throw new Error(result.error || "Save failed");
-
-      records.unshift({
-        trackId: trackId,
-        nameThai: payload.nameThai,
-        botanical: payload.botanical,
-        gbh: payload.gbh,
-        height: payload.height,
-        crownTotal: crownTotal,
-        savedAt: now.toLocaleTimeString()
-      });
-      renderTable();
-      btn.className = "btn-submit success";
-      btn.textContent = "Saved to GitHub!";
-      showBadge("success", "&#10003; Saved to tree-inventory.csv");
-      setTimeout(function(){
-        btn.disabled = false;
-        btn.className = "btn-submit";
-        btn.textContent = "Save to GitHub CSV";
-      }, 3000);
-      resetForm();
-
-    } catch(err) {
-      btn.disabled = false;
-      btn.textContent = "Save to GitHub CSV";
-      showBadge("error", "&#10007; " + err.message);
-      showError("Error: " + err.message);
+function updateMapFromUTM() {
+  var x = parseFloat(document.getElementById('x').value);
+  var y = parseFloat(document.getElementById('y').value);
+  var zone = document.getElementById('utmZone').value;
+  var zoneNum = parseInt(zone);
+  var isNorth = zone.endsWith('N');
+  if (!x || !y || x < 100000 || x > 999999 || y < 0) return;
+  try {
+    var ll = utmToLatLng(x, y, zoneNum, isNorth);
+    if (ll.lat > -90 && ll.lat < 90 && ll.lng > -180 && ll.lng < 180) {
+      document.getElementById('latlngDisplay').textContent =
+        'Lat: ' + ll.lat.toFixed(6) + '  Lng: ' + ll.lng.toFixed(6) + '  [WGS84]';
+      var label = document.getElementById('trackId').value || 'Tree';
+      setMarker(ll.lat, ll.lng, label);
+      map.setView([ll.lat, ll.lng], 15);
     }
+  } catch(e) {}
+}
+
+function latLngToUTM(lat, lng) {
+  var zone = document.getElementById('utmZone').value;
+  var zoneNum = parseInt(zone);
+  var a = 6378137.0, f = 1/298.257223563;
+  var b = a*(1-f), e2 = 1-(b*b)/(a*a);
+  var k0 = 0.9996;
+  var latR = lat*Math.PI/180;
+  var lonR = lng*Math.PI/180;
+  var lon0R = ((zoneNum-1)*6 - 180 + 3)*Math.PI/180;
+  var N = a/Math.sqrt(1-e2*Math.sin(latR)*Math.sin(latR));
+  var T = Math.tan(latR)*Math.tan(latR);
+  var C = (e2/(1-e2))*Math.cos(latR)*Math.cos(latR);
+  var A = Math.cos(latR)*(lonR-lon0R);
+  var M = a*((1-e2/4-3*e2*e2/64-5*e2*e2*e2/256)*latR
+    -(3*e2/8+3*e2*e2/32+45*e2*e2*e2/1024)*Math.sin(2*latR)
+    +(15*e2*e2/256+45*e2*e2*e2/1024)*Math.sin(4*latR)
+    -(35*e2*e2*e2/3072)*Math.sin(6*latR));
+  var easting = k0*N*(A+(1-T+C)*A*A*A/6+(5-18*T+T*T+72*C-58*e2/(1-e2))*A*A*A*A*A/120)+500000;
+  var northing = k0*(M+N*Math.tan(latR)*(A*A/2+(5-T+9*C+4*C*C)*A*A*A*A/24+(61-58*T+T*T+600*C-330*e2/(1-e2))*A*A*A*A*A*A/720));
+  if (lat < 0) northing += 10000000;
+  document.getElementById('x').value = easting.toFixed(3);
+  document.getElementById('y').value = northing.toFixed(3);
+  document.getElementById('latlngDisplay').textContent =
+    'Lat: ' + lat.toFixed(6) + '  Lng: ' + lng.toFixed(6) + '  [WGS84]';
+}
+
+map.on('click', function(e) {
+  latLngToUTM(e.latlng.lat, e.latlng.lng);
+  var label = document.getElementById('trackId').value || 'Tree';
+  setMarker(e.latlng.lat, e.latlng.lng, label);
+});
+
+function centerMap() { if (marker) map.setView(marker.getLatLng(), 15); }
+function clearMarker() {
+  if (marker) { map.removeLayer(marker); marker = null; }
+  document.getElementById('x').value = '';
+  document.getElementById('y').value = '';
+  document.getElementById('latlngDisplay').textContent = '';
+}
+
+// ─── Plot saved records on map ────────────────────────────────────────────────
+function plotSavedMarker(lat, lng, label) {
+  var m = L.marker([lat, lng], { icon: greenIcon }).addTo(map)
+    .bindPopup('<b style="color:#14532d">' + label + '</b>');
+  allMarkers.push(m);
+}
+
+// ─── Form helpers ─────────────────────────────────────────────────────────────
+window.onload = function() { addBranch(true); };
+
+function addBranch(first) {
+  var c = document.getElementById('branches');
+  var idx = c.children.length + 1;
+  var row = document.createElement('div');
+  row.className = 'branch-row'; row.id = 'branch-'+idx;
+  row.innerHTML = '<div class="branch-num">'+idx+'</div>'
+    + '<input type="number" placeholder="GBH'+idx+'" step="0.1" min="0" style="flex:1;background:#040d06;border:1px solid #4ade8022;border-radius:6px;padding:0.5rem 0.7rem;color:#d1fae5;font-size:0.85rem;outline:none;font-family:Courier New,monospace;" onfocus="this.style.borderColor=\'#4ade8066\'" onblur="this.style.borderColor=\'#4ade8022\'" />'
+    + '<button class="btn-remove" onclick="removeBranch('+idx+')" style="display:'+(first?'none':'flex')+'">&#10005;</button>';
+  c.appendChild(row);
+}
+
+function removeBranch(idx) {
+  var el = document.getElementById('branch-'+idx); if (el) el.remove();
+  document.querySelectorAll('.branch-row').forEach(function(r,i) {
+    r.id='branch-'+(i+1); r.querySelector('.branch-num').textContent=i+1;
+    r.querySelector('input').placeholder='GBH'+(i+1);
+    r.querySelector('button').setAttribute('onclick','removeBranch('+(i+1)+')');
+    r.querySelector('button').style.display = document.querySelectorAll('.branch-row').length===1?'none':'flex';
+  });
+}
+
+function getBranches() {
+  return Array.from(document.querySelectorAll('.branch-row')).map(function(r,i){
+    return { gbh: parseFloat(r.querySelector('input').value)||'' };
+  });
+}
+
+function updateTotal() {
+  var n=parseFloat(document.getElementById('crowncoverN').value)||0;
+  var s=parseFloat(document.getElementById('crowncovS').value)||0;
+  var e=parseFloat(document.getElementById('crowncovE').value)||0;
+  var w=parseFloat(document.getElementById('crowncovW').value)||0;
+  var t=(n+s+e+w).toFixed(2);
+  document.getElementById('crownTotal').textContent=t+' m';
+  return t;
+}
+
+function showBadge(type,msg) {
+  document.getElementById('statusBadge').innerHTML='<div class="badge badge-'+type+'">'+msg+'</div>';
+  if(type!=='count') setTimeout(updateCountBadge,3500);
+}
+function updateCountBadge() {
+  document.getElementById('statusBadge').innerHTML = records.length>0
+    ?'<div class="badge badge-count">&#128203; '+records.length+' saved</div>':'';
+}
+function showError(msg) {
+  var el=document.getElementById('errorBox'); el.textContent=msg; el.style.display='block';
+  setTimeout(function(){el.style.display='none';},6000);
+}
+function resetForm() {
+  ['trackId','x','y','nameThai','botanical','genus','speciesepi',
+   'gbh','height','crowncoverN','crowncovS','crowncovE','crowncovW'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+  document.getElementById('latlngDisplay').textContent='';
+  document.getElementById('branches').innerHTML=''; addBranch(true);
+  document.getElementById('crownTotal').textContent='0.00 m';
+}
+
+var records = [];
+function renderTable() {
+  document.getElementById('tableCard').style.display='block';
+  document.getElementById('recordsBody').innerHTML=records.map(function(r){
+    return '<tr>'
+      +'<td class="td-id">'+r.trackId+'</td>'
+      +'<td class="td-num">'+r.utmZone+'</td>'
+      +'<td class="td-num">'+r.x+'</td>'
+      +'<td class="td-num">'+r.y+'</td>'
+      +'<td>'+( r.nameThai||'-')+'</td>'
+      +'<td class="td-bot">'+(r.botanical||'-')+'</td>'
+      +'<td class="td-num">'+(r.gbh||'-')+'</td>'
+      +'<td class="td-num">'+(r.height||'-')+'</td>'
+      +'<td class="td-num">'+r.crownTotal+' m</td>'
+      +'</tr>';
+  }).join('');
+  updateCountBadge();
+}
+
+// ─── Submit ───────────────────────────────────────────────────────────────────
+async function submitForm() {
+  var trackId = document.getElementById('trackId').value.trim();
+  if (!trackId) { showError('Please enter Track ID'); return; }
+  var crownTotal = updateTotal();
+  var now = new Date();
+  var zone = document.getElementById('utmZone').value;
+  var xVal = parseFloat(document.getElementById('x').value)||'';
+  var yVal = parseFloat(document.getElementById('y').value)||'';
+
+  var payload = {
+    timestamp: now.toLocaleString('th-TH'),
+    trackId: trackId,
+    utmZone: 'WGS84 UTM '+zone,
+    x: xVal, y: yVal,
+    nameThai: document.getElementById('nameThai').value,
+    botanical: document.getElementById('botanical').value,
+    genus: document.getElementById('genus').value,
+    speciesepi: document.getElementById('speciesepi').value,
+    gbh: parseFloat(document.getElementById('gbh').value)||'',
+    branches: getBranches(),
+    height: parseFloat(document.getElementById('height').value)||'',
+    crowncoverN: parseFloat(document.getElementById('crowncoverN').value)||'',
+    crowncovS: parseFloat(document.getElementById('crowncovS').value)||'',
+    crowncovE: parseFloat(document.getElementById('crowncovE').value)||'',
+    crowncovW: parseFloat(document.getElementById('crowncovW').value)||'',
+    crownTotal: crownTotal
+  };
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled=true; btn.textContent='Saving...';
+
+  try {
+    var resp = await fetch('/.netlify/functions/save-tree', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    var result = await resp.json();
+    if (!resp.ok || result.error) throw new Error(result.error||'Save failed');
+
+    // Plot on map
+    if (xVal && yVal) {
+      var zoneNum = parseInt(zone);
+      var isNorth = zone.endsWith('N');
+      try {
+        var ll = utmToLatLng(xVal, yVal, zoneNum, isNorth);
+        plotSavedMarker(ll.lat, ll.lng, trackId);
+      } catch(e){}
+    }
+
+    records.unshift(payload);
+    renderTable();
+    btn.className='btn-submit success'; btn.textContent='Saved!';
+    showBadge('success','&#10003; Saved to tree-inventory.csv');
+    setTimeout(function(){ btn.disabled=false; btn.className='btn-submit'; btn.textContent='Save to GitHub CSV'; },3000);
+    resetForm();
+  } catch(err) {
+    btn.disabled=false; btn.textContent='Save to GitHub CSV';
+    showBadge('error','&#10007; '+err.message);
+    showError('Error: '+err.message);
   }
+}
 </script>
 </body>
 </html>
