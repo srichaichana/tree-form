@@ -77,6 +77,13 @@
     .map-controls { display: flex; gap: 0.5rem; margin-top: 0.6rem; flex-wrap: wrap; }
     .btn-map { background: var(--green-mid); border: 1px solid #4ade8044; color: var(--green); border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer; font-size: 0.72rem; font-family: 'Courier New', monospace; letter-spacing: 0.05em; transition: all 0.2s; }
     .btn-map:hover { background: #166534; border-color: var(--green); }
+    .btn-gps-enable { background: #052e16; border: 1px solid #4ade8088; color: #4ade80; border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer; font-size: 0.72rem; font-family: 'Courier New', monospace; letter-spacing: 0.05em; transition: all 0.2s; }
+    .btn-gps-enable:hover { background: #166534; border-color: var(--green); box-shadow: 0 0 10px #4ade8033; }
+    .btn-gps-disable { background: #3b0a0a; border: 1px solid #dc262688; color: #f87171; border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer; font-size: 0.72rem; font-family: 'Courier New', monospace; letter-spacing: 0.05em; transition: all 0.2s; display: none; }
+    .btn-gps-disable:hover { background: #7f1d1d; border-color: #dc2626; }
+    .gps-status { font-size: 0.65rem; color: #4ade8077; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.3rem; }
+    .gps-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; display: inline-block; animation: gpsPulse 1.2s ease-in-out infinite; }
+    @keyframes gpsPulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.4;transform:scale(0.7);} }
 
     /* Error */
     .error-box { color: #fca5a5; font-size: 0.8rem; margin-bottom: 0.8rem; text-align: center; background: #450a0a44; border: 1px solid #dc262633; border-radius: 6px; padding: 0.55rem; }
@@ -154,6 +161,12 @@
     <div class="map-controls">
       <button class="btn-map" onclick="centerMap()">&#8982; Center on Marker</button>
       <button class="btn-map" onclick="clearMarker()">&#10005; Clear Marker</button>
+      <button class="btn-gps-enable" id="btnEnableGPS" onclick="enableGPS()">&#128225; Enable GPS</button>
+      <button class="btn-gps-disable" id="btnDisableGPS" onclick="disableGPS()">&#128224; Disable GPS</button>
+    </div>
+    <div id="gpsStatus" class="gps-status" style="margin-top:0.4rem;display:none;">
+      <span class="gps-dot"></span>
+      <span id="gpsStatusText">Searching for GPS signal…</span>
     </div>
   </div>
 
@@ -375,7 +388,82 @@ function plotSavedMarker(lat, lng, label) {
   allMarkers.push(m);
 }
 
-// ─── Form helpers ─────────────────────────────────────────────────────────────
+
+// ─── GPS ──────────────────────────────────────────────────────────────────────
+var gpsWatchId = null;
+var gpsMarker = null;
+var gpsCircle = null;
+
+var gpsIcon = L.divIcon({
+  html: '<div style="width:18px;height:18px;background:#38bdf8;border:3px solid #0ea5e9;border-radius:50%;box-shadow:0 0 12px #38bdf888;"></div>',
+  iconSize: [18,18], iconAnchor: [9,9], className:''
+});
+
+function enableGPS() {
+  if (!navigator.geolocation) {
+    showError('GPS ไม่รองรับบนอุปกรณ์นี้ / GPS not supported on this device');
+    return;
+  }
+  document.getElementById('btnEnableGPS').style.display = 'none';
+  document.getElementById('btnDisableGPS').style.display = 'inline-flex';
+  document.getElementById('gpsStatus').style.display = 'flex';
+  document.getElementById('gpsStatusText').textContent = 'กำลังค้นหาสัญญาณ GPS… / Searching for GPS signal…';
+
+  gpsWatchId = navigator.geolocation.watchPosition(
+    function(pos) {
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+      var acc = pos.coords.accuracy;
+
+      // Update status
+      document.getElementById('gpsStatusText').textContent =
+        '📍 GPS Active — Accuracy: ±' + acc.toFixed(1) + ' m';
+
+      // Update or create GPS marker
+      if (gpsMarker) {
+        gpsMarker.setLatLng([lat, lng]);
+        gpsCircle.setLatLng([lat, lng]).setRadius(acc);
+      } else {
+        gpsMarker = L.marker([lat, lng], { icon: gpsIcon })
+          .addTo(map)
+          .bindPopup('<b style="color:#0ea5e9">&#128225; GPS Location</b><br>Lat: '+lat.toFixed(6)+'<br>Lng: '+lng.toFixed(6)+'<br>Accuracy: ±'+acc.toFixed(1)+' m');
+        gpsCircle = L.circle([lat, lng], {
+          radius: acc, color: '#38bdf8', fillColor: '#38bdf844',
+          fillOpacity: 0.3, weight: 1
+        }).addTo(map);
+      }
+
+      // Fill in UTM fields and move map
+      latLngToUTM(lat, lng);
+      var label = document.getElementById('trackId').value || 'GPS Tree';
+      setMarker(lat, lng, label);
+      map.setView([lat, lng], 17);
+    },
+    function(err) {
+      var msg = err.code === 1 ? 'ถูกปฏิเสธสิทธิ์ GPS / Permission denied'
+               : err.code === 2 ? 'ไม่พบตำแหน่ง / Position unavailable'
+               : 'GPS timeout';
+      document.getElementById('gpsStatusText').textContent = '⚠ ' + msg;
+      document.getElementById('gpsStatus').style.display = 'flex';
+      showError('GPS Error: ' + msg);
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 }
+  );
+}
+
+function disableGPS() {
+  if (gpsWatchId !== null) {
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+  }
+  if (gpsMarker) { map.removeLayer(gpsMarker); gpsMarker = null; }
+  if (gpsCircle) { map.removeLayer(gpsCircle); gpsCircle = null; }
+  document.getElementById('btnEnableGPS').style.display = 'inline-flex';
+  document.getElementById('btnDisableGPS').style.display = 'none';
+  document.getElementById('gpsStatus').style.display = 'none';
+}
+
+
 window.onload = function() { addBranch(true); };
 
 function addBranch(first) {
